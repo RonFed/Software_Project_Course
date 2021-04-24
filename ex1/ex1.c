@@ -3,20 +3,21 @@
 #include <string.h>
 #include <assert.h>
 #define BUFFERSIZE 1000
-#define BASE_ARR_SIZE 20
+#define BASE_ARR_SIZE 100
 #define ARR_SIZE_MULTIPLY 2
 #define COMMA ','
 #define MALLOC_FOR_STRING(str) (char *)(malloc((strlen(str) + 1) * sizeof(char)))
+#define MALLOC_ARR(type, size) (type*)malloc((size) * sizeof(type))
 
 int d = 0;
 int k = 0;
 double minus_one = -1;
 int max_iter = 200;
 int lines_count;
-void read_text_to_lines(char *** lines);
+void read_text_to_lines(char ***lines);
 void split_line_to_strings_nums(char *str, char ***);
 void count_commas_in_str(char *str, int *d);
-void turn_lines_to_vectors(int *d,  int *lines_count, char ***lines, double ***vers);
+void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***vers);
 int is_positive_int(const char *str);
 void check_command_line_args(int *argc, char const *argv[]);
 double distacne(double **a, double **b);
@@ -25,7 +26,7 @@ void multiply_scalar(double *vector, double *scalar, double *result);
 void add_vectors(double *a, double *b, double *result);
 void print_final(double **mat);
 void malloc_for_mat_and_set_zeros(double ***mat, int lines, int cols);
-void k_means(double *** centers, double *** vectors);
+void k_means(double ***centers, double ***vectors);
 
 int main(int argc, char const *argv[])
 {
@@ -35,24 +36,25 @@ int main(int argc, char const *argv[])
     check_command_line_args(&argc, argv);
 
     read_text_to_lines(&lines);
-    
+
     turn_lines_to_vectors(&d, &lines_count, &lines, &vectors);
     free(lines);
 
-    malloc_for_mat_and_set_zeros(&centers, k, d);   
-    k_means(&centers,&vectors);
+    malloc_for_mat_and_set_zeros(&centers, k, d);
+    k_means(&centers, &vectors);
 
     print_final(centers);
 
     return 0;
 }
 
-void read_text_to_lines(char *** lines) {
+void read_text_to_lines(char ***lines)
+{
     int arrlen;
     char buffer[BUFFERSIZE];
-    lines_count = 0;   
+    lines_count = 0;
     arrlen = BASE_ARR_SIZE;
-    *lines = (char **)(malloc(arrlen * sizeof(char *)));
+    *lines = MALLOC_ARR(char *,arrlen);
     assert((*lines) != NULL);
     while (fgets(buffer, BUFFERSIZE, stdin) != NULL)
     {
@@ -76,7 +78,8 @@ void read_text_to_lines(char *** lines) {
 
 void count_commas_in_str(char *str, int *d)
 {
-    int count = 0;  size_t i;
+    int count = 0;
+    size_t i;
     for (i = 0; i < strlen(str); i++)
     {
         if (str[i] == COMMA)
@@ -89,7 +92,8 @@ void count_commas_in_str(char *str, int *d)
 
 void split_line_to_strings_nums(char *str, char ***result)
 {
-    char *num_str; int j = 0;
+    char *num_str;
+    int j = 0;
     *result = (char **)malloc(d * sizeof(char *));
     num_str = strtok(str, ",");
     while (num_str)
@@ -101,13 +105,14 @@ void split_line_to_strings_nums(char *str, char ***result)
     }
 }
 
-void turn_lines_to_vectors(int *d, int * lines_count, char ***lines, double ***vers)
+void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***vers)
 {
-    int i,j;
-    char ** data; char ** current_line;
+    int i, j;
+    char **data;
+    char **current_line;
     (*vers) = (double **)(malloc((*lines_count) * sizeof(double *)));
     data = (char **)(malloc)((*lines_count) * sizeof(char *));
-    
+
     for (i = 0; i < *lines_count; i++)
     {
         (*vers)[i] = (double *)(malloc((*d) * sizeof(double)));
@@ -117,14 +122,15 @@ void turn_lines_to_vectors(int *d, int * lines_count, char ***lines, double ***v
         for (j = 0; j < *d; j++)
         {
             char *eptr;
-            (*vers)[i][j] = strtod(current_line[j],&eptr);
+            (*vers)[i][j] = strtod(current_line[j], &eptr);
         }
     }
 }
 
 int is_positive_int(const char *str)
 {
-    char digit = str[0];size_t i;
+    char digit = str[0];
+    size_t i;
     if (digit <= '0' || digit > '9')
     {
         return 0;
@@ -174,7 +180,8 @@ void check_command_line_args(int *argc, char const *argv[])
 
 double distacne(double **a, double **b)
 {
-    double sum = 0;int i;
+    double sum = 0;
+    int i;
     for (i = 0; i < d; i++)
     {
         sum += ((*a)[i] - (*b)[i]) * ((*a)[i] - (*b)[i]);
@@ -184,13 +191,13 @@ double distacne(double **a, double **b)
 
 int closest_cluster_index(double *vector, double **centers)
 {
-    int min_dist_index = 0,i;
+    int min_dist_index = 0, i;
     double min_dist;
-    min_dist = distacne(&vector,&centers[0]);
+    min_dist = distacne(&vector, &centers[0]);
     for (i = 0; i < k; i++)
     {
         double current_dist;
-        current_dist = distacne(&vector,&centers[i]);
+        current_dist = distacne(&vector, &centers[i]);
         if (current_dist < min_dist)
         {
             min_dist = current_dist;
@@ -220,7 +227,7 @@ void add_vectors(double *a, double *b, double *result)
 
 void print_final(double **mat)
 {
-    int i,j;
+    int i, j;
     for (i = 0; i < k; i++)
     {
         for (j = 0; j < d - 1; j++)
@@ -235,20 +242,24 @@ void print_final(double **mat)
 void malloc_for_mat_and_set_zeros(double ***mat, int lines, int cols)
 {
     int i;
-    *mat = (double **)calloc(lines,sizeof(double *));
+    *mat = MALLOC_ARR(double *, lines);
     for (i = 0; i < lines; i++)
     {
-        (*mat)[i] = (double *)calloc(cols,sizeof(double));
+        (*mat)[i] = (double *)calloc(cols, sizeof(double));
     }
 }
 
-void k_means(double *** centers, double *** vectors) {
-    int i,j,l;
+void k_means(double ***centers, double ***vectors)
+{
+    int i, j, l;
     double **cluster_sums;
-    int * cluster_size; int * which_cluster;
+    double *negative_vec;
+    int *cluster_size;
+    int *which_cluster;
+    negative_vec = MALLOC_ARR(double, d);
     malloc_for_mat_and_set_zeros(&cluster_sums, k, d);
-    cluster_size = (int *) malloc((k) * sizeof(int));
-    which_cluster = (int *) malloc(lines_count * sizeof(int));
+    cluster_size = MALLOC_ARR(int, k);
+    which_cluster = MALLOC_ARR(int, lines_count);
     for (i = 0; i < k; i++)
     {
         for (j = 0; j < d; j++)
@@ -267,14 +278,12 @@ void k_means(double *** centers, double *** vectors) {
         for (j = 0; j < lines_count; j++)
         {
             int new_closest_cluster;
-            new_closest_cluster = closest_cluster_index((*vectors)[j],*centers);
+            new_closest_cluster = closest_cluster_index((*vectors)[j], *centers);
             if (new_closest_cluster != which_cluster[j])
             {
                 if (which_cluster[j] != -1)
                 {
-                    double *negative_vec;
                     cluster_size[which_cluster[j]] -= 1;
-                    negative_vec = (double *)malloc(d * sizeof(double));
                     multiply_scalar((*vectors)[j], &minus_one, negative_vec);
                     add_vectors(cluster_sums[which_cluster[j]], negative_vec, cluster_sums[which_cluster[j]]);
                 }
@@ -293,7 +302,7 @@ void k_means(double *** centers, double *** vectors) {
             if (cluster_size[l] != 0)
             {
                 double inverse_size;
-                inverse_size = (double) 1 / cluster_size[l];
+                inverse_size = (double)1 / cluster_size[l];
                 multiply_scalar(cluster_sums[l], &inverse_size, (*centers)[l]);
             }
         }
