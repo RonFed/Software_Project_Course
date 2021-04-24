@@ -16,91 +16,42 @@ int lines_count;
 void read_text_to_lines(char *** lines);
 void split_line_to_strings_nums(char *str, char ***);
 void count_commas_in_str(char *str, int *d);
-void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***vers);
+void turn_lines_to_vectors(int *d,  int *lines_count, char ***lines, double ***vers);
 int is_positive_int(const char *str);
 void check_command_line_args(int *argc, char const *argv[]);
-void distacne(double **a, double **b, double *result);
-void closest_cluster_index(double *vector, double **centers, int *index_result);
+double distacne(double **a, double **b);
+int closest_cluster_index(double *vector, double **centers);
 void multiply_scalar(double *vector, double *scalar, double *result);
 void add_vectors(double *a, double *b, double *result);
 void print_final(double **mat);
 void malloc_for_mat_and_set_zeros(double ***mat, int lines, int cols);
+void k_means(double *** centers, double *** vectors);
 
 int main(int argc, char const *argv[])
 {
+    char **lines;
+    double **vectors;
+    double **centers;
     check_command_line_args(&argc, argv);
 
-    char **lines;
     read_text_to_lines(&lines);
-
-    double **vectors;
+    
     turn_lines_to_vectors(&d, &lines_count, &lines, &vectors);
     free(lines);
 
-    double **centers;
-    malloc_for_mat_and_set_zeros(&centers, k, d);
-    double **cluster_sums;
-    malloc_for_mat_and_set_zeros(&cluster_sums, k, d);
-    int cluster_size[k];
-    int which_cluster[lines_count];
-    for (int i = 0; i < k; i++)
-    {
-        for (int j = 0; j < d; j++)
-        {
-            centers[i][j] = vectors[i][j];
-        }
-        cluster_size[i] = 0;
-    }
-    for (int i = 0; i < lines_count; i++)
-    {
-        which_cluster[i] = -1;
-    }
-    for (int i = 0; i < max_iter; i++)
-    {
-        int differ = 0;
-        for (int j = 0; j < lines_count; j++)
-        {
-            int new_closest_cluster;
-            closest_cluster_index(vectors[j], centers, &new_closest_cluster);
-            if (new_closest_cluster != which_cluster[j])
-            {
-                if (which_cluster[j] != -1)
-                {
-                    cluster_size[which_cluster[j]] -= 1;
-                    double *negative_vec;
-                    negative_vec = (double *)malloc(d * sizeof(double));
-                    multiply_scalar(vectors[j], &minus_one, negative_vec);
-                    add_vectors(cluster_sums[which_cluster[j]], negative_vec, cluster_sums[which_cluster[j]]);
-                }
-                cluster_size[new_closest_cluster] += 1;
-                add_vectors(cluster_sums[new_closest_cluster], vectors[j], cluster_sums[new_closest_cluster]);
-                which_cluster[j] = new_closest_cluster;
-                differ = 1;
-            }
-        }
-        if (differ == 0)
-        {
-            break;
-        }
-        for (int l = 0; l < k; l++)
-        {
-            if (cluster_size[l] != 0)
-            {
-                double inverse_size;
-                inverse_size = (double) 1 / cluster_size[l];
-                multiply_scalar(cluster_sums[l], &inverse_size, centers[l]);
-            }
-        }
-    }
+    malloc_for_mat_and_set_zeros(&centers, k, d);   
+    k_means(&centers,&vectors);
+
     print_final(centers);
 
     return 0;
 }
 
 void read_text_to_lines(char *** lines) {
-    lines_count = 0;
-    int arrlen = BASE_ARR_SIZE;
+    int arrlen;
     char buffer[BUFFERSIZE];
+    lines_count = 0;   
+    arrlen = BASE_ARR_SIZE;
     *lines = (char **)(malloc(arrlen * sizeof(char *)));
     assert((*lines) != NULL);
     while (fgets(buffer, BUFFERSIZE, stdin) != NULL)
@@ -125,8 +76,8 @@ void read_text_to_lines(char *** lines) {
 
 void count_commas_in_str(char *str, int *d)
 {
-    int count = 0;
-    for (int i = 0; i < strlen(str); i++)
+    int count = 0;  size_t i;
+    for (i = 0; i < strlen(str); i++)
     {
         if (str[i] == COMMA)
         {
@@ -138,10 +89,9 @@ void count_commas_in_str(char *str, int *d)
 
 void split_line_to_strings_nums(char *str, char ***result)
 {
-
+    char *num_str; int j = 0;
     *result = (char **)malloc(d * sizeof(char *));
-    char *num_str = strtok(str, ",");
-    int j = 0;
+    num_str = strtok(str, ",");
     while (num_str)
     {
         (*result)[j] = MALLOC_FOR_STRING(num_str);
@@ -151,18 +101,20 @@ void split_line_to_strings_nums(char *str, char ***result)
     }
 }
 
-void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***vers)
+void turn_lines_to_vectors(int *d, int * lines_count, char ***lines, double ***vers)
 {
+    int i,j;
+    char ** data; char ** current_line;
     (*vers) = (double **)(malloc((*lines_count) * sizeof(double *)));
-    char *data[*lines_count];
-    char **current_line = NULL;
-    for (int i = 0; i < *lines_count; i++)
+    data = (char **)(malloc)((*lines_count) * sizeof(char *));
+    
+    for (i = 0; i < *lines_count; i++)
     {
         (*vers)[i] = (double *)(malloc((*d) * sizeof(double)));
         data[i] = (*lines)[i];
         data[i][strcspn(data[i], "\n")] = '\0';
         split_line_to_strings_nums(data[i], &current_line);
-        for (int j = 0; j < *d; j++)
+        for (j = 0; j < *d; j++)
         {
             char *eptr;
             (*vers)[i][j] = strtod(current_line[j],&eptr);
@@ -172,12 +124,12 @@ void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***ve
 
 int is_positive_int(const char *str)
 {
-    char digit = str[0];
+    char digit = str[0];size_t i;
     if (digit <= '0' || digit > '9')
     {
         return 0;
     }
-    for (int i = 1; i < strlen(str); i++)
+    for (i = 1; i < strlen(str); i++)
     {
         digit = str[i];
         if (digit < '0' || digit > '9')
@@ -220,37 +172,38 @@ void check_command_line_args(int *argc, char const *argv[])
     }
 }
 
-void distacne(double **a, double **b, double *result)
+double distacne(double **a, double **b)
 {
-    double sum = 0;
-    for (int i = 0; i < d; i++)
+    double sum = 0;int i;
+    for (i = 0; i < d; i++)
     {
         sum += ((*a)[i] - (*b)[i]) * ((*a)[i] - (*b)[i]);
     }
-    *result = sum;
+    return sum;
 }
 
-void closest_cluster_index(double *vector, double **centers, int *index_result)
+int closest_cluster_index(double *vector, double **centers)
 {
-    int min_dist_index = 0;
+    int min_dist_index = 0,i;
     double min_dist;
-    distacne(&vector, &centers[0], &min_dist);
-    for (int i = 0; i < k; i++)
+    min_dist = distacne(&vector,&centers[0]);
+    for (i = 0; i < k; i++)
     {
         double current_dist;
-        distacne(&vector, &centers[i], &current_dist);
+        current_dist = distacne(&vector,&centers[i]);
         if (current_dist < min_dist)
         {
             min_dist = current_dist;
             min_dist_index = i;
         }
     }
-    *index_result = min_dist_index;
+    return min_dist_index;
 }
 
 void multiply_scalar(double *vector, double *scalar, double *result)
 {
-    for (int i = 0; i < d; i++)
+    int i;
+    for (i = 0; i < d; i++)
     {
         result[i] = vector[i] * (*scalar);
     }
@@ -258,7 +211,8 @@ void multiply_scalar(double *vector, double *scalar, double *result)
 
 void add_vectors(double *a, double *b, double *result)
 {
-    for (int i = 0; i < d; i++)
+    int i;
+    for (i = 0; i < d; i++)
     {
         result[i] = a[i] + b[i];
     }
@@ -266,9 +220,10 @@ void add_vectors(double *a, double *b, double *result)
 
 void print_final(double **mat)
 {
-    for (int i = 0; i < k; i++)
+    int i,j;
+    for (i = 0; i < k; i++)
     {
-        for (int j = 0; j < d - 1; j++)
+        for (j = 0; j < d - 1; j++)
         {
             printf("%.4f,", mat[i][j]);
         }
@@ -279,9 +234,68 @@ void print_final(double **mat)
 
 void malloc_for_mat_and_set_zeros(double ***mat, int lines, int cols)
 {
+    int i;
     *mat = (double **)calloc(lines,sizeof(double *));
-    for (int i = 0; i < lines; i++)
+    for (i = 0; i < lines; i++)
     {
         (*mat)[i] = (double *)calloc(cols,sizeof(double));
+    }
+}
+
+void k_means(double *** centers, double *** vectors) {
+    int i,j,l;
+    double **cluster_sums;
+    int * cluster_size; int * which_cluster;
+    malloc_for_mat_and_set_zeros(&cluster_sums, k, d);
+    cluster_size = (int *) malloc((k) * sizeof(int));
+    which_cluster = (int *) malloc(lines_count * sizeof(int));
+    for (i = 0; i < k; i++)
+    {
+        for (j = 0; j < d; j++)
+        {
+            (*centers)[i][j] = (*vectors)[i][j];
+        }
+        cluster_size[i] = 0;
+    }
+    for (i = 0; i < lines_count; i++)
+    {
+        which_cluster[i] = -1;
+    }
+    for (i = 0; i < max_iter; i++)
+    {
+        int differ = 0;
+        for (j = 0; j < lines_count; j++)
+        {
+            int new_closest_cluster;
+            new_closest_cluster = closest_cluster_index((*vectors)[j],*centers);
+            if (new_closest_cluster != which_cluster[j])
+            {
+                if (which_cluster[j] != -1)
+                {
+                    double *negative_vec;
+                    cluster_size[which_cluster[j]] -= 1;
+                    negative_vec = (double *)malloc(d * sizeof(double));
+                    multiply_scalar((*vectors)[j], &minus_one, negative_vec);
+                    add_vectors(cluster_sums[which_cluster[j]], negative_vec, cluster_sums[which_cluster[j]]);
+                }
+                cluster_size[new_closest_cluster] += 1;
+                add_vectors(cluster_sums[new_closest_cluster], (*vectors)[j], cluster_sums[new_closest_cluster]);
+                which_cluster[j] = new_closest_cluster;
+                differ = 1;
+            }
+        }
+        if (differ == 0)
+        {
+            break;
+        }
+        for (l = 0; l < k; l++)
+        {
+            if (cluster_size[l] != 0)
+            {
+                double inverse_size;
+                inverse_size = (double) 1 / cluster_size[l];
+                multiply_scalar(cluster_sums[l], &inverse_size, (*centers)[l]);
+            }
+        }
     }
 }
