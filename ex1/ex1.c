@@ -7,25 +7,24 @@
 #define ARR_SIZE_MULTIPLY 2
 #define COMMA ','
 #define MALLOC_FOR_STRING(str) (char *)(malloc((strlen(str) + 1) * sizeof(char)))
-void updateS(float m[], int s[], int x);
 
 int d = 0;
 int k = 0;
-float minus_one = -1;
+double minus_one = -1;
 int max_iter = 200;
 int lines_count;
 void read_text_to_lines(char *** lines);
 void split_line_to_strings_nums(char *str, char ***);
 void count_commas_in_str(char *str, int *d);
-void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, float ***vers);
+void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***vers);
 int is_positive_int(const char *str);
 void check_command_line_args(int *argc, char const *argv[]);
-void distacne(float **a, float **b, float *result);
-void closest_cluster_index(float *vector, float **centers, int *index_result);
-void multiply_scalar(float *vector, float *scalar, float *result);
-void add_vectors(float *a, float *b, float *result);
-void print_final(float **mat);
-void malloc_for_mat_and_set_zeros(float ***mat, int lines, int cols);
+void distacne(double **a, double **b, double *result);
+void closest_cluster_index(double *vector, double **centers, int *index_result);
+void multiply_scalar(double *vector, double *scalar, double *result);
+void add_vectors(double *a, double *b, double *result);
+void print_final(double **mat);
+void malloc_for_mat_and_set_zeros(double ***mat, int lines, int cols);
 
 int main(int argc, char const *argv[])
 {
@@ -34,13 +33,13 @@ int main(int argc, char const *argv[])
     char **lines;
     read_text_to_lines(&lines);
 
-    float **vectors;
+    double **vectors;
     turn_lines_to_vectors(&d, &lines_count, &lines, &vectors);
     free(lines);
 
-    float **centers;
+    double **centers;
     malloc_for_mat_and_set_zeros(&centers, k, d);
-    float **cluster_sums;
+    double **cluster_sums;
     malloc_for_mat_and_set_zeros(&cluster_sums, k, d);
     int cluster_size[k];
     int which_cluster[lines_count];
@@ -68,8 +67,8 @@ int main(int argc, char const *argv[])
                 if (which_cluster[j] != -1)
                 {
                     cluster_size[which_cluster[j]] -= 1;
-                    float *negative_vec;
-                    negative_vec = (float *)malloc(d * sizeof(float));
+                    double *negative_vec;
+                    negative_vec = (double *)malloc(d * sizeof(double));
                     multiply_scalar(vectors[j], &minus_one, negative_vec);
                     add_vectors(cluster_sums[which_cluster[j]], negative_vec, cluster_sums[which_cluster[j]]);
                 }
@@ -87,8 +86,8 @@ int main(int argc, char const *argv[])
         {
             if (cluster_size[l] != 0)
             {
-                float inverse_size;
-                inverse_size = (float) 1 / cluster_size[l];
+                double inverse_size;
+                inverse_size = (double) 1 / cluster_size[l];
                 multiply_scalar(cluster_sums[l], &inverse_size, centers[l]);
             }
         }
@@ -152,20 +151,21 @@ void split_line_to_strings_nums(char *str, char ***result)
     }
 }
 
-void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, float ***vers)
+void turn_lines_to_vectors(int *d, int *lines_count, char ***lines, double ***vers)
 {
-    (*vers) = (float **)(malloc((*lines_count) * sizeof(float *)));
+    (*vers) = (double **)(malloc((*lines_count) * sizeof(double *)));
     char *data[*lines_count];
     char **current_line = NULL;
     for (int i = 0; i < *lines_count; i++)
     {
-        (*vers)[i] = (float *)(malloc((*d) * sizeof(float)));
+        (*vers)[i] = (double *)(malloc((*d) * sizeof(double)));
         data[i] = (*lines)[i];
         data[i][strcspn(data[i], "\n")] = '\0';
         split_line_to_strings_nums(data[i], &current_line);
         for (int j = 0; j < *d; j++)
         {
-            (*vers)[i][j] = (float)atof(current_line[j]);
+            char *eptr;
+            (*vers)[i][j] = strtod(current_line[j],&eptr);
         }
     }
 }
@@ -220,9 +220,9 @@ void check_command_line_args(int *argc, char const *argv[])
     }
 }
 
-void distacne(float **a, float **b, float *result)
+void distacne(double **a, double **b, double *result)
 {
-    float sum = 0;
+    double sum = 0;
     for (int i = 0; i < d; i++)
     {
         sum += ((*a)[i] - (*b)[i]) * ((*a)[i] - (*b)[i]);
@@ -230,14 +230,14 @@ void distacne(float **a, float **b, float *result)
     *result = sum;
 }
 
-void closest_cluster_index(float *vector, float **centers, int *index_result)
+void closest_cluster_index(double *vector, double **centers, int *index_result)
 {
     int min_dist_index = 0;
-    float min_dist;
+    double min_dist;
     distacne(&vector, &centers[0], &min_dist);
     for (int i = 0; i < k; i++)
     {
-        float current_dist;
+        double current_dist;
         distacne(&vector, &centers[i], &current_dist);
         if (current_dist < min_dist)
         {
@@ -248,7 +248,7 @@ void closest_cluster_index(float *vector, float **centers, int *index_result)
     *index_result = min_dist_index;
 }
 
-void multiply_scalar(float *vector, float *scalar, float *result)
+void multiply_scalar(double *vector, double *scalar, double *result)
 {
     for (int i = 0; i < d; i++)
     {
@@ -256,7 +256,7 @@ void multiply_scalar(float *vector, float *scalar, float *result)
     }
 }
 
-void add_vectors(float *a, float *b, float *result)
+void add_vectors(double *a, double *b, double *result)
 {
     for (int i = 0; i < d; i++)
     {
@@ -264,7 +264,7 @@ void add_vectors(float *a, float *b, float *result)
     }
 }
 
-void print_final(float **mat)
+void print_final(double **mat)
 {
     for (int i = 0; i < k; i++)
     {
@@ -277,16 +277,11 @@ void print_final(float **mat)
     }
 }
 
-void malloc_for_mat_and_set_zeros(float ***mat, int lines, int cols)
+void malloc_for_mat_and_set_zeros(double ***mat, int lines, int cols)
 {
-    *mat = (float **)malloc(lines * sizeof(float *));
+    *mat = (double **)calloc(lines,sizeof(double *));
     for (int i = 0; i < lines; i++)
     {
-        (*mat)[i] = (float *)malloc(cols * sizeof(float));
-        for (int j = 0; j < cols; j++)
-        {
-            (*mat)[i][j] = 0;
-        }
-        
+        (*mat)[i] = (double *)calloc(cols,sizeof(double));
     }
 }
