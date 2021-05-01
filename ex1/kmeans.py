@@ -66,6 +66,9 @@ else:
         exit()
 try:
     k = int(sys.argv[1])
+    if k <= 0:
+        print("Invalid value for k")
+        exit()
 except ValueError:
     print("Invalid value for k")
     exit()
@@ -77,6 +80,10 @@ while True:
         data.append(split_to_nums(input()))
     except EOFError:
         break
+
+if k >= len(data):
+    print("K is too large for the input file. required k < n")
+    exit()
 
 ##########################################################
 #####################  K-mean algorithm ##################
