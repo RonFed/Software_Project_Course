@@ -1,13 +1,16 @@
 import numpy as np
 import sys
 import pandas as pd
+import mykmeanssp as km
 
 
 def k_means_pp_alg(data, k):
     n, d = data.shape
-    centers = np.full((n, d), 0.0, dtype = float)
-    rand_index = np.random.choice(n)
-    centers[0] = data[rand_index]
+    np.random.seed(0)
+    centers = np.full((n, d), 0.0, dtype=float)
+    centers_ids = np.full(k, -1)
+    centers_ids[0] = np.random.choice(n)
+    centers[0] = data[centers_ids[0]]
     z = 1
     while z < k:
         Distances = np.full(n, 0.0, dtype=float)
@@ -16,13 +19,16 @@ def k_means_pp_alg(data, k):
         z += 1
         sum_dists = sum(Distances)
         prob = Distances / sum_dists
-        prob_index = np.random.choice(n, p=prob)
-        centers[z - 1] = data[prob_index]
-    return centers[:k]
+        centers_ids[z - 1] = np.random.choice(n, p=prob)
+        centers[z - 1] = data[centers_ids[z - 1]]
+    return centers[:k], centers_ids
 
 
 def read_args(argv):
     num_args = len(argv)
+    if num_args == 1:
+        print("No arguments provided, exiting...")
+        sys.exit(1)
     try:
         k = int(argv[1])
     except ValueError:
@@ -48,13 +54,13 @@ def read_args(argv):
 
 def main():
     k, max_iter, path1, path2 = read_args(sys.argv)
-    data1 = pd.read_csv(path1, index_col=0, header=None)
-    data2 = pd.read_csv(path2, index_col=0, header=None)
-    d = pd.merge(data1, data2, left_index=True, right_index=True).values
-    centers = k_means_pp_alg(d, k)
-    print(centers)
+    data1 = pd.read_csv(path1, index_col=0, header=None).sort_index()
+    data2 = pd.read_csv(path2, index_col=0, header=None).sort_index()
+    data_total = pd.merge(data1, data2, left_index=True, right_index=True).values
+    centers, centers_inds = k_means_pp_alg(data_total, k)
+    print(*centers_inds, sep=",")
+    km.fit(centers.tolist(), data_total.tolist(), max_iter)
 
 
 if __name__ == '__main__':
     main()
-
