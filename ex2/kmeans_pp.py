@@ -53,14 +53,24 @@ def read_args(argv):
 
 
 def main():
+
+    # input arguments validation
     k, max_iter, path1, path2 = read_args(sys.argv)
+
+    # getting the data from files and merging
     data1 = pd.read_csv(path1, index_col=0, header=None).sort_index()
     data2 = pd.read_csv(path2, index_col=0, header=None).sort_index()
     data_total = pd.merge(data1, data2, left_index=True, right_index=True).values
+
+    # calculation of initial centroids
     centers, centers_inds = k_means_pp_alg(data_total, k)
     print(*centers_inds, sep=",")
-    km.fit(centers.tolist(), data_total.tolist(), max_iter)
 
+    # calling the C API to calculate k means using the initial vectors calculated
+    final_result = km.fit(centers.tolist(), data_total.tolist(), max_iter)
+    for i in range(len(final_result)-1):
+        print(*np.round(final_result[i],4), sep=",")
+    print(*np.round(final_result[i+1],4), sep=",", end='')
 
 if __name__ == '__main__':
     main()
