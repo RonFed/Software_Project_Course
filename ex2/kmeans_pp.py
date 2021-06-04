@@ -6,16 +6,20 @@ import mykmeanssp as km
 
 def k_means_pp_alg(data, k):
     n, d = data.shape
+    # setting seed to be consistent 
     np.random.seed(0)
     centers = np.full((n, d), 0.0, dtype=float)
     centers_ids = np.full(k, -1)
+    # choosing the first centroid randomly
     centers_ids[0] = np.random.choice(n)
     centers[0] = data[centers_ids[0]]
     z = 1
+    # distances array to hold distances between data vectors and centroids
+    Distances = np.full(n, 'Inf', dtype=float)
     while z < k:
-        Distances = np.full(n, 0.0, dtype=float)
         for i in range(n):
-            Distances[i] = min([sum((data[i] - centers[j]) ** 2) for j in range(z)])
+            # dynamic programming, reducing complexity
+            Distances[i] = min([sum((data[i] - centers[z-1]) ** 2), Distances[i]])
         z += 1
         sum_dists = sum(Distances)
         prob = Distances / sum_dists
@@ -31,6 +35,8 @@ def read_args(argv):
         sys.exit(1)
     try:
         k = int(argv[1])
+        if k < 0:
+            raise ValueError
     except ValueError:
         print("Invalid value for k")
         sys.exit(1)
@@ -41,6 +47,8 @@ def read_args(argv):
     elif num_args == 5:
         try:
             max_iter = int(argv[2])
+            if max_iter < 0:
+                raise ValueError
         except ValueError:
             print("Invalid value for max_iter")
             sys.exit(1)
@@ -68,6 +76,8 @@ def main():
 
     # calling the C API to calculate k means using the initial vectors calculated
     final_result = km.fit(centers.tolist(), data_total.tolist(), max_iter)
+
+    # printing the result from C avoiding '\n' in last row
     for i in range(len(final_result)-1):
         print(*np.round(final_result[i],4), sep=",")
     print(*np.round(final_result[i+1],4), sep=",", end='')
