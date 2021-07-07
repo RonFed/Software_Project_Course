@@ -27,36 +27,32 @@ def k_means_pp_alg(data, k):
         centers[z - 1] = data[centers_ids[z - 1]]
     return centers[:k], centers_ids
 
+def isInt(x):
+    try:
+        int(x)
+        return True
+    except ValueError:
+        return False
 
 def read_args(argv):
     num_args = len(argv)
-    if num_args == 1:
-        print("No arguments provided, exiting...")
-        sys.exit(1)
-    try:
-        k = int(argv[1])
-        if k < 0:
-            raise ValueError
-    except ValueError:
-        print("Invalid value for k")
-        sys.exit(1)
+    assert num_args > 1, "No arguments provided, exiting..."
+    k = argv[1]
+    assert isInt(k), "K must be an integer"
+    k = int(k)
+    assert k > 0, "K must be positive"
+    assert num_args == 4 or num_args == 5, "Number of inputs is not valid"
     if num_args == 4:
         max_iter = 300
         path1 = argv[2]
         path2 = argv[3]
     elif num_args == 5:
-        try:
-            max_iter = int(argv[2])
-            if max_iter < 0:
-                raise ValueError
-        except ValueError:
-            print("Invalid value for max_iter")
-            sys.exit(1)
+        max_iter = argv[2]
+        assert isInt(max_iter), "max_iter must be an integer"
+        max_iter = int(max_iter)
+        assert max_iter > 0, "max_iter must be positive"
         path1 = argv[3]
         path2 = argv[4]
-    else:
-        print("Number of variables is not valid")
-        sys.exit(1)
     return k, max_iter, path1, path2
 
 
@@ -69,6 +65,9 @@ def main():
     data1 = pd.read_csv(path1, index_col=0, header=None).sort_index()
     data2 = pd.read_csv(path2, index_col=0, header=None).sort_index()
     data_total = pd.merge(data1, data2, left_index=True, right_index=True).values
+
+    n = data_total.shape[0]
+    assert k < n , "Invalid value for k>=n"
 
     # calculation of initial centroids
     centers, centers_inds = k_means_pp_alg(data_total, k)
