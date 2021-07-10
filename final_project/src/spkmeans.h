@@ -19,6 +19,7 @@ GENERAL USE MACROS
         (ptr) = CALLOC_ARR(type, size);    \
         ASSERT_MALLOC(ptr);                \
     } while (0)
+#define ZERO_4F "0.0000"
 
 /*
 GENERAL MATRIX
@@ -57,6 +58,9 @@ typedef struct
     double *data;
 } diag_matrix;
 
+diag_matrix * init_diag_mat(unsigned int dim); 
+void print_diag_mat(diag_matrix * mat);
+
 /*
 WEIGHT MATRIX RELATED FUNCTIONS 
 */
@@ -75,4 +79,11 @@ DEGREE MATRIX RELATED FUNCTION
 // Sum of specific row in a symmetric matrix
 double row_sum_sym_mat(sym_matrix * mat, unsigned int row);
 // Calculate the degree matrix
-diag_matrix * degree_mat(matrix * mat); // TODO !!
+diag_matrix * degree_mat(matrix * mat); 
+
+/*
+NORMALIZED LAPLACIAN MATRIX FUNCTION
+*/
+
+// Comput the normalized laplacian matrix - symmetric matrix
+sym_matrix * l_norm_mat (matrix * mat);
