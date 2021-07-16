@@ -110,9 +110,9 @@ double l2_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
     for (i = 0; i < mat->cols; i++)
     {
         dif = ((mat->data)[row1][i]) - ((mat->data)[row2][i]);
-        result += (pow(dif, 2));
+        result += (dif * dif);
     }
-    result = pow(result, 0.5);
+    result = sqrt(result);
     return result;
 }
 
@@ -195,11 +195,71 @@ sym_matrix *l_norm_mat(matrix *mat)
             }
             else
             {
-                d_sqrt = pow(curr_d_i * curr_d_j, -0.5);
+                d_sqrt = 1 / (sqrt(curr_d_i * curr_d_j));
                 (l_norm_m->data)[i][j] = -d_sqrt * curr_weight;
             }
         }
     }
 
     return l_norm_m;
+}
+
+// ----------------------------------------------------------------------------------//
+/*
+Jacobi Algorithm
+*/
+// ----------------------------------------------------------------------------------//
+
+jacobi_matrix * init_jac_mat(sym_matrix * s_mat) {
+    jacobi_matrix * jac_mat = (jacobi_matrix *) malloc(sizeof(jacobi_matrix));
+    jac_mat->mat = s_mat;
+    // only once find the max in all the matrix
+    // next steps are cheaper
+    max_abs_val_initial(jac_mat);
+    update_c_s_params(jac_mat);
+    return jac_mat;
+}
+
+void max_abs_val_initial(jacobi_matrix * j_mat) {
+    double max = 0, curr_abs;
+    int i,j;
+    sym_matrix * sm = j_mat->mat;
+    unsigned int curr_row = -1, curr_col = -1;
+     for (i = 0; i <sm->dim; i++)
+    {
+        // max abs value off - diagonal
+        for (j = 0; j < i; j++)
+        {
+            curr_abs = fabs((sm->data)[i][j]);
+            if (curr_abs > max)
+            {
+                max = curr_abs;
+                curr_row = i;
+                curr_col = j;
+            }
+        }
+    }
+    // symmetric matrix so we can change the indexes here
+    // since the implementation of symmetric matrix used bottom triangle representation
+    j_mat->row_ind = curr_col;
+    j_mat->col_ind = curr_row;
+}
+
+double get_val(jacobi_matrix * j_mat, unsigned int row, unsigned int col) {
+    return ((j_mat->mat)->data)[row][col];
+}
+
+// this fuction is called after the max value row and col indexes are updated
+void update_c_s_params(jacobi_matrix * j_mat) {
+    unsigned int i,j;
+    double theta, c, s, t;
+    i = j_mat->row_ind;
+    j = j_mat->col_ind;
+    theta = (get_val(j_mat, j, j) - get_val(j_mat, i, i)) / (2 * get_val(j_mat, i, j));
+    t = SIGN(theta);
+    t  = t / (fabs(theta) + sqrt(theta * theta + 1));
+    c = 1 / (sqrt(t * t + 1));
+    s = t * c;
+    j_mat->c = c;
+    j_mat->s = s;
 }

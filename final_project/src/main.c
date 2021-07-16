@@ -38,5 +38,8 @@ int main(int argc, char const *argv[])
     sym_matrix * l_norm;
     l_norm = l_norm_mat(m);
     print_sym_mat(l_norm);
+    jacobi_matrix * jm = init_jac_mat(l_norm);
+    // printf("%.15f\n", l_norm[2,4]);
+
     return 0;
 }

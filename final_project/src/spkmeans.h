@@ -20,6 +20,7 @@ GENERAL USE MACROS
         ASSERT_MALLOC(ptr);                \
     } while (0)
 #define ZERO_4F "0.0000"
+#define SIGN(X) ((X) >= 0) ? 1 : -1
 
 /*
 GENERAL MATRIX
@@ -87,3 +88,32 @@ NORMALIZED LAPLACIAN MATRIX FUNCTION
 
 // Comput the normalized laplacian matrix - symmetric matrix
 sym_matrix * l_norm_mat (matrix * mat);
+
+
+/*
+JACOBI ALGORITHM FUNCTIONS AND STRUCTURES
+*/
+
+typedef struct
+{
+    // the matrix being diagonalized (symmetric)
+   sym_matrix * mat;
+    // rotation params, holds the index for the element
+    // with max abs value
+   unsigned int row_ind;
+   unsigned int col_ind;
+   // rotation params
+   double c;
+   double s;
+} jacobi_matrix;
+
+// Initialize Jacobi matrix from a given symmetric matrix
+// (find inital max element loc, c and s params)
+jacobi_matrix * init_jac_mat(sym_matrix * s_mat);
+
+// Initail abs value lookup
+void max_abs_val_initial(jacobi_matrix * mat);
+// getter for jacobi matrix
+double get_val(jacobi_matrix * mat, unsigned int row, unsigned int col);
+// update the c and s params after new max is found
+void update_c_s_params(jacobi_matrix * mat);
