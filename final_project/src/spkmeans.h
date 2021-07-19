@@ -20,7 +20,7 @@ GENERAL USE MACROS
         ASSERT_MALLOC(ptr);                \
     } while (0)
 #define ZERO_4F "0.0000"
-#define SIGN(X) ((X) >= 0) ? 1 : -1
+#define SIGN(X) (((X) >= 0) ? 1 : -1)
 
 /*
 GENERAL MATRIX
@@ -48,6 +48,8 @@ typedef struct
 
 sym_matrix * init_sym_mat(unsigned int dim); 
 void print_sym_mat(sym_matrix *mat); 
+double get_val_sym(sym_matrix *mat, unsigned int row, unsigned col);
+void set_val_sym(sym_matrix *mat, unsigned int row, unsigned col, double val);
 
 /*
 DIAGONAL MATRIX
@@ -105,15 +107,32 @@ typedef struct
    // rotation params
    double c;
    double s;
+    // array containing the column index of the element with the
+    // highest abs value (off diagonal) i.e max_indes[i] = j means mat[i][j] has 
+    // max abs value in row i (right to the diagonal)
+   unsigned int * max_inds;
 } jacobi_matrix;
 
 // Initialize Jacobi matrix from a given symmetric matrix
+// (not allocating new space, ovverides s_mat)
 // (find inital max element loc, c and s params)
 jacobi_matrix * init_jac_mat(sym_matrix * s_mat);
 
 // Initail abs value lookup
-void max_abs_val_initial(jacobi_matrix * mat);
+void max_abs_val_initial(jacobi_matrix * j_mat);
 // getter for jacobi matrix
-double get_val(jacobi_matrix * mat, unsigned int row, unsigned int col);
+double get_val(jacobi_matrix * j_mat, unsigned int row, unsigned int col);
+
+void set_val(jacobi_matrix * j_mat, unsigned int row, unsigned int col, double val);
 // update the c and s params after new max is found
-void update_c_s_params(jacobi_matrix * mat);
+void update_c_s_params(jacobi_matrix * j_mat);
+// rotate the jacobi matrix using c and s parmas
+void rotate_jac(jacobi_matrix * j_mat);
+// find new max efiicianly after rotation
+void update_max_jac(jacobi_matrix * j_mat);
+// update j_mat->max_inds for row i
+void update_max_in_row(jacobi_matrix * j_mat, unsigned int row);
+// upatate the toal max and row_ind, col_ind fields
+void update_total_max_inds(jacobi_matrix * j_mat);
+
+void jacobi(jacobi_matrix * j_mat);
