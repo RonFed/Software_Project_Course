@@ -4,15 +4,15 @@
 
 int main(int argc, char const *argv[])
 {
-    int i,j;
+    int i, j;
     unsigned int rows = 5;
     unsigned int cols = 5;
-    matrix * m = init_mat(rows, cols);
-     for (i = 0; i < m->rows; i++)
+    matrix *m = init_mat(rows, cols);
+    for (i = 0; i < m->rows; i++)
     {
-        for (j = 0; j < m->cols; j++) 
+        for (j = 0; j < m->cols; j++)
         {
-           (m->data)[i][j] = i + j;
+            (m->data)[i][j] = i + j;
         }
     }
     // print_mat(m);
@@ -48,14 +48,39 @@ int main(int argc, char const *argv[])
     set_val_sym(rami,2,0,4);
     set_val_sym(rami,2,1,2);
     set_val_sym(rami,2,2,3);
-    // (rami->data)[0][0] = 3;
-    // (rami->data)[1][0] = 2;
-    // (rami->data)[2][0] = 4;
-    // (rami->data)[2][1] = 2;
-    // (rami->data)[2][2] = 3;
-    // print_sym_mat(rami);
     jacobi_matrix * jm = init_jac_mat(rami);
-    // printf("%.15f\n", l_norm[2,4]);
     jacobi(jm);
+
+    // python example
+    // sym_matrix *rami;
+    // rami = init_sym_mat(4);
+    // set_val_sym(rami, 0, 0, 0.91);
+    // set_val_sym(rami, 1, 0, 0.18);
+    // set_val_sym(rami, 2, 0, 0.48);
+    // set_val_sym(rami, 3, 0, 0.99);
+    // set_val_sym(rami, 1, 1, 0.63);
+    // set_val_sym(rami, 2, 1, 0.18);
+    // set_val_sym(rami, 3, 1, 0.1);
+    // set_val_sym(rami, 2, 2, 0.22);
+    // set_val_sym(rami, 3, 2, 0.13);
+    // set_val_sym(rami, 3, 3, 0.48);
+    // print_sym_mat(rami);
+    // jacobi_matrix *jm = init_jac_mat(rami);
+    // jacobi(jm);
+
+    printf("-------------e_mat------\n");
+    print_e_mat(jm);
+
+    // sym_matrix * sm2 = init_sym_mat(rows);
+    //  for (i = 0; i < m->rows; i++)
+    // {
+    //     for (j = 0; j <=i; j++)
+    //     {
+    //        set_val_sym(sm2, i, j, i+j);
+    //     }
+    // }
+    // print_sym_mat(sm2);
+    // jacobi_matrix * jm2 = init_jac_mat(sm2);
+    // jacobi(jm2);
     return 0;
 }

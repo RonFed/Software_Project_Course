@@ -21,6 +21,8 @@ GENERAL USE MACROS
     } while (0)
 #define ZERO_4F "0.0000"
 #define SIGN(X) (((X) >= 0) ? 1 : -1)
+#define SQUARE(X) ((X) * (X))
+#define EPSILON 0.001
 
 /*
 GENERAL MATRIX
@@ -98,6 +100,16 @@ JACOBI ALGORITHM FUNCTIONS AND STRUCTURES
 
 typedef struct
 {
+    //eiganvalue
+    double e_val;
+    //eiganvector
+    double * vec;
+    // index of vector in matrix
+    unsigned int ind;
+} e_vector;
+
+typedef struct
+{
     // the matrix being diagonalized (symmetric)
    sym_matrix * mat;
     // rotation params, holds the index for the element
@@ -111,28 +123,43 @@ typedef struct
     // highest abs value (off diagonal) i.e max_indes[i] = j means mat[i][j] has 
     // max abs value in row i (right to the diagonal)
    unsigned int * max_inds;
+    // the off diagonal diffrence between rotations, used to determine convergence
+   double off_diff;
+    // matrix containing the eiganvectors as columns
+   e_vector * e_mat;
 } jacobi_matrix;
 
+
 // Initialize Jacobi matrix from a given symmetric matrix
-// (not allocating new space, ovverides s_mat)
-// (find inital max element loc, c and s params)
+// (not allocating new space for main matrix, ovverides s_mat)
+// alocating memory for max_inds
 jacobi_matrix * init_jac_mat(sym_matrix * s_mat);
 
 // Initail abs value lookup
 void max_abs_val_initial(jacobi_matrix * j_mat);
 // getter for jacobi matrix
 double get_val(jacobi_matrix * j_mat, unsigned int row, unsigned int col);
-
+// set a specifi cell in jacobi matrix to given value
 void set_val(jacobi_matrix * j_mat, unsigned int row, unsigned int col, double val);
 // update the c and s params after new max is found
 void update_c_s_params(jacobi_matrix * j_mat);
 // rotate the jacobi matrix using c and s parmas
 void rotate_jac(jacobi_matrix * j_mat);
 // find new max efiicianly after rotation
-void update_max_jac(jacobi_matrix * j_mat);
+void update_max_jac(jacobi_matrix * j_mat, int is_not_first);
 // update j_mat->max_inds for row i
 void update_max_in_row(jacobi_matrix * j_mat, unsigned int row);
 // upatate the toal max and row_ind, col_ind fields
 void update_total_max_inds(jacobi_matrix * j_mat);
-
+// initialize eigan-vectors matrix (memeory allocation and set to identity matrix)
+void init_e_mat(jacobi_matrix * j_mat);
+// update eigan-vectors matrix after rotation (multiply by rotation matrix)
+void update_e_mat(jacobi_matrix * j_mat);
+// print the eigan-vectors matrix
+void print_e_mat(jacobi_matrix * j_mat);
+// compare two vectors to be used by qsort
+int cmp_vecs(const void * vec1, const void * vec2);
+// set eigan-values to the eigan-vectors
+void set_eigan_values(jacobi_matrix * j_mat);
+// main jacobi algorithm
 void jacobi(jacobi_matrix * j_mat);
