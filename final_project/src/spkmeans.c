@@ -26,10 +26,11 @@ void print_mat(matrix *mat)
     int i, j;
     for (i = 0; i < mat->rows; i++)
     {
-        for (j = 0; j < mat->cols; j++)
+        for (j = 0; j < mat->cols - 1; j++)
         {
             printf("%.4f,", (mat->data)[i][j]);
         }
+        printf("%.4f", (mat->data)[i][mat->cols - 1]);
         printf("\n");
     }
 }
@@ -57,10 +58,11 @@ void print_sym_mat(sym_matrix *mat)
         {
             printf("%.4f,", (mat->data)[j][i - j]);
         }
-        for (j = i; j < dim; j++)
+        for (j = i; j < dim - 1; j++)
         {
             printf("%.4f,", (mat->data)[i][j - i]);
         }
+        printf("%.4f", (mat->data)[i][dim - 1 - i]);
         printf("\n");
     }
 }
@@ -343,10 +345,11 @@ void print_e_mat(jacobi_matrix *j_mat)
     int i, j;
     for (i = 0; i < n; i++)
     {
-        for (j = 0; j < n; j++)
+        for (j = 0; j < n - 1; j++)
         {
             printf("%.4f,", (e_mat_data[j].vec)[i]);
         }
+        printf("%.4f", (e_mat_data[n - 1].vec)[i]);
         printf("\n");
     }
 }
@@ -519,9 +522,64 @@ void jacobi(jacobi_matrix *j_mat)
         update_e_mat(j_mat);
         iters++;
     } while (iters < 100 && j_mat->off_diff > EPSILON);
-    
     // setting each eigan-value to the coresponding eigan-vector
     set_eigan_values(j_mat);
     // sorting the eigan-vectors
     qsort(j_mat->e_mat, (j_mat->mat)->dim, sizeof(e_vector), cmp_vecs);
+}
+
+// ----------------------------------------------------------------------------------//
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////  Text Parsing   //////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+// ----------------------------------------------------------------------------------//
+
+matrix *read_file_to_mat(FILE *file_pointer)
+{
+    matrix *data_mat;
+    double **data;
+    double current_element;
+    char current_delimeter;
+    unsigned int lines_count = 0;
+    unsigned int current_arr_len = BASE_ARR_SIZE;
+    unsigned int dimension = 0;
+
+    MALLOC_ARR_ASSERT(data, double *, BASE_ARR_SIZE);
+    // first line analysis to determine the dimension of the csv format (columns number)
+    dimension = find_dimension_from_first_line(file_pointer, data[0]);
+    lines_count++;
+
+    // TODO !!
+
+    data_mat->cols = dimension;
+    data_mat->rows = lines_count;
+    data_mat->data = data;
+    return data_mat;
+}
+
+unsigned int find_dimension_from_first_line(FILE * file_pointer, double * first_line) {
+    double current_element;
+    char current_delimeter;
+    unsigned int dimension = 0;
+    unsigned int current_arr_len = BASE_ARR_SIZE;
+
+    CALLOC_ARR_ASSERT(first_line, double, BASE_ARR_SIZE);
+
+    while (fscanf(file_pointer, "%lf%c", &current_element, &current_delimeter) == 2)
+    {
+        // rarely happens - first line is over BASE_ARR_SIZE elements
+        if (dimension == current_arr_len)
+        {
+            current_arr_len *= ARR_SIZE_MULTIPLY;
+            first_line = realloc(first_line, current_arr_len * sizeof(double));
+            assert(first_line);
+        }
+        first_line[dimension] = current_element;
+        dimension++;
+        if (current_delimeter == '\n'){
+            break;
+        }
+    }
+    first_line = realloc(first_line, dimension * sizeof(double));
+    return dimension;
 }

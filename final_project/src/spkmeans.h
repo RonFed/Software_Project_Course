@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 
 /*
@@ -23,9 +24,11 @@ GENERAL USE MACROS
 #define SIGN(X) (((X) >= 0) ? 1 : -1)
 #define SQUARE(X) ((X) * (X))
 #define EPSILON 0.001
+#define BASE_ARR_SIZE 100
+#define ARR_SIZE_MULTIPLY 2
 
 /*
-GENERAL MATRIX
+GENERAL REAL VALUES MATRIX
 */
 typedef struct
 {
@@ -163,3 +166,13 @@ int cmp_vecs(const void * vec1, const void * vec2);
 void set_eigan_values(jacobi_matrix * j_mat);
 // main jacobi algorithm
 void jacobi(jacobi_matrix * j_mat);
+
+/*
+TEXT PARSING
+*/
+
+matrix * read_file_to_mat(FILE * file_pointer);
+// find the dimension (number of numbers in each row) used for the first line only
+unsigned int find_dimension_from_first_line(FILE * file_pointer, double * first_line);
+
+
