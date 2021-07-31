@@ -534,22 +534,48 @@ void jacobi(jacobi_matrix *j_mat)
 ///////////////////////////////////////////////////////////////////////////////////////
 // ----------------------------------------------------------------------------------//
 
+// main parsing - return matrix object from csv formatted file
 matrix *read_file_to_mat(FILE *file_pointer)
 {
-    matrix *data_mat;
-    double **data;
-    double current_element;
-    char current_delimeter;
+    matrix *     data_mat;
+    double **    data;
+    char *       buffer;
+    double       current_element;
+    char         current_delimeter;
     unsigned int lines_count = 0;
     unsigned int current_arr_len = BASE_ARR_SIZE;
+    unsigned int buffer_size = 0;
     unsigned int dimension = 0;
+    data_mat = (matrix *)malloc(sizeof(matrix));
 
     MALLOC_ARR_ASSERT(data, double *, BASE_ARR_SIZE);
+
     // first line analysis to determine the dimension of the csv format (columns number)
-    dimension = find_dimension_from_first_line(file_pointer, data[0]);
+    CALLOC_ARR_ASSERT(data[0], double, BASE_ARR_SIZE);
+    // passing pointer to first line since it might change using realloc (dimension is not known yet)
+    dimension = find_dimension_from_first_line(file_pointer, &data[0]);
     lines_count++;
 
-    // TODO !!
+    // assuming each numeber is less than 19 digits
+    buffer_size = dimension * 20;
+    buffer = MALLOC_ARR(char, buffer_size);
+
+    while (fgets(buffer, buffer_size, file_pointer))
+    {
+        // multiply the size of the array when it's full
+        if (lines_count == current_arr_len)
+        {
+            current_arr_len *= ARR_SIZE_MULTIPLY;
+            data = (double **)realloc(data, current_arr_len * sizeof(double *));
+            assert(data);
+        }
+
+        CALLOC_ARR_ASSERT(data[lines_count], double, dimension);
+        read_line_to_row(buffer, data[lines_count++], dimension);
+    }
+    free(buffer);
+    // triming the final array
+    data = (double **)realloc(data, lines_count * sizeof(double *));
 
     data_mat->cols = dimension;
     data_mat->rows = lines_count;
@@ -557,13 +583,12 @@ matrix *read_file_to_mat(FILE *file_pointer)
     return data_mat;
 }
 
-unsigned int find_dimension_from_first_line(FILE * file_pointer, double * first_line) {
-    double current_element;
-    char current_delimeter;
+unsigned int find_dimension_from_first_line(FILE *file_pointer, double **first_line)
+{
+    double       current_element;
+    char         current_delimeter;
     unsigned int dimension = 0;
     unsigned int current_arr_len = BASE_ARR_SIZE;
-
-    CALLOC_ARR_ASSERT(first_line, double, BASE_ARR_SIZE);
 
     while (fscanf(file_pointer, "%lf%c", &current_element, &current_delimeter) == 2)
     {
@@ -571,15 +596,31 @@ unsigned int find_dimension_from_first_line(FILE * file_pointer, double * first_
         if (dimension == current_arr_len)
         {
             current_arr_len *= ARR_SIZE_MULTIPLY;
-            first_line = realloc(first_line, current_arr_len * sizeof(double));
-            assert(first_line);
+            (*first_line) = realloc(*first_line, current_arr_len * sizeof(double));
+            assert(*first_line);
         }
-        first_line[dimension] = current_element;
+        (*first_line)[dimension] = current_element;
         dimension++;
-        if (current_delimeter == '\n'){
+        if (current_delimeter == '\n')
+        {
             break;
         }
     }
-    first_line = realloc(first_line, dimension * sizeof(double));
+    (*first_line) = realloc(*first_line, dimension * sizeof(double));
     return dimension;
+}
+
+void read_line_to_row(char *buffer, double *line, unsigned int dimension)
+{
+    double  current_element;
+    char    last_char_in_row = 0;
+    int     i, chars_read;
+
+    for (i = 0; i < dimension; i++)
+    {
+        sscanf(buffer, "%lf,%n", &current_element, &chars_read);
+        line[i] = current_element;
+        // update the pointer to the buffer
+        buffer += chars_read;
+    }
 }

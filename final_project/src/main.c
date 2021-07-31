@@ -8,18 +8,19 @@ int main(int argc, char const *argv[])
     char * filename = "final_project\\src\\python_scripts\\data1_data.csv";
     fp = fopen(filename, "r");
     matrix * mm = read_file_to_mat(fp);
+    print_mat(mm);
 
-    int i, j;
-    unsigned int rows = 10;
-    unsigned int cols = 5;
-    matrix *m = init_mat(rows, cols);
-    for (i = 0; i < m->rows; i++)
-    {
-        for (j = 0; j < m->cols; j++)
-        {
-            (m->data)[i][j] = i + j*j -i*i + j*i;
-        }
-    }
+    // int i, j;
+    // unsigned int rows = 10;
+    // unsigned int cols = 5;
+    // matrix *m = init_mat(rows, cols);
+    // for (i = 0; i < m->rows; i++)
+    // {
+    //     for (j = 0; j < m->cols; j++)
+    //     {
+    //         (m->data)[i][j] = i + j*j -i*i + j*i;
+    //     }
+    // }
     // print_mat(m);
 
     // sym_matrix * sm = init_sym_mat(4);
@@ -43,11 +44,12 @@ int main(int argc, char const *argv[])
     // dm = degree_mat(m);
     // // print_diag_mat(dm);
 
-    sym_matrix * l_norm;
-    l_norm = l_norm_mat(m);
-    // print_sym_mat(l_norm);
-    jacobi_matrix * jm = init_jac_mat(l_norm);
-    jacobi(jm);
+    // sym_matrix * l_norm;
+    // l_norm = l_norm_mat(m);
+    // // print_sym_mat(l_norm);
+    // jacobi_matrix * jm = init_jac_mat(l_norm);
+    // jacobi(jm);
+
     // sym_matrix * rami;
     // rami = init_sym_mat(3);
     // set_val_sym(rami,0,0,3);
@@ -75,7 +77,7 @@ int main(int argc, char const *argv[])
     // jacobi_matrix *jm = init_jac_mat(rami);
     // jacobi(jm);
     // print_sym_mat(jm->mat);
-    printf("-------------e_mat------\n");
+    // printf("-------------e_mat------\n");
     // print_e_mat(jm);
 
     // sym_matrix * sm2 = init_sym_mat(rows);

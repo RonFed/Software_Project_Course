@@ -173,6 +173,6 @@ TEXT PARSING
 
 matrix * read_file_to_mat(FILE * file_pointer);
 // find the dimension (number of numbers in each row) used for the first line only
-unsigned int find_dimension_from_first_line(FILE * file_pointer, double * first_line);
+unsigned int find_dimension_from_first_line(FILE * file_pointer, double ** first_line);
 
-
+void read_line_to_row(char * buffer, double * line, unsigned int dimension);
