@@ -35,6 +35,15 @@ void print_mat(matrix *mat)
     }
 }
 
+void free_mat(matrix * mat) {
+    int i;
+    for (i = 0; i < mat->rows; i++)
+    {
+       free((mat->data)[i]);
+    }
+    free(mat->data);
+}
+
 sym_matrix *init_sym_mat(unsigned int dim)
 {
     int i;
@@ -46,6 +55,15 @@ sym_matrix *init_sym_mat(unsigned int dim)
         CALLOC_ARR_ASSERT((mat->data)[i], double, dim - i);
     }
     return mat;
+}
+
+void free_sym_mat(sym_matrix *mat) {
+    int i;
+    for (i = 0; i < mat->dim; i++)
+    {
+        free((mat->data)[i]);
+    }
+    free(mat->data);
 }
 
 void print_sym_mat(sym_matrix *mat)
@@ -93,6 +111,11 @@ diag_matrix *init_diag_mat(unsigned int dim)
     mat->dim = dim;
     MALLOC_ARR_ASSERT(mat->data, double, dim);
     return mat;
+}
+
+void free_diag_mat(diag_matrix *mat) {
+    free(mat->data);
+    free(mat);
 }
 
 void print_diag_mat(diag_matrix *mat)
@@ -218,7 +241,8 @@ sym_matrix *l_norm_mat(matrix *mat)
             }
         }
     }
-
+    free_diag_mat(degree_m);
+    free_sym_mat(weight_m);
     return l_norm_m;
 }
 
@@ -252,6 +276,19 @@ jacobi_matrix *init_jac_mat(sym_matrix *s_mat)
     CALLOC_ARR_ASSERT(jac_mat->max_inds, unsigned int, s_mat->dim);
     jac_mat->off_diff = 0;
     return jac_mat;
+}
+
+void free_jacobi(jacobi_matrix *j_mat) {
+    int i, n;
+    n = (j_mat->mat)->dim;
+    // free eigan-mat
+    for (i = 0; i < n; i++)
+    {
+        free((j_mat->e_mat)[i].vec);
+    }
+    free(j_mat->e_mat);
+    // free max-inds array
+    free(j_mat->max_inds);
 }
 
 void max_abs_val_initial(jacobi_matrix *j_mat)
@@ -459,6 +496,10 @@ void update_max_in_row(jacobi_matrix *j_mat, unsigned int row)
     }
 }
 
+double get_val_max_off_diagonal(jacobi_matrix * j_mat) {
+    return get_val(j_mat, j_mat->row_ind, j_mat->col_ind);
+}
+
 void update_total_max_inds(jacobi_matrix *j_mat)
 {
     double max = -1, curr;
@@ -479,6 +520,7 @@ void update_total_max_inds(jacobi_matrix *j_mat)
     j_mat->col_ind = max_col;
 }
 
+// comparison function for qsort
 int cmp_vecs(const void *vec1, const void *vec2)
 {
     // if the two vectors have the same eigan-value, sort them by index (the smaller index first)
@@ -517,6 +559,11 @@ void jacobi(jacobi_matrix *j_mat)
     do
     {
         update_max_jac(j_mat, iters);
+        // if diagonal then stop, avoiding divide by zero
+        if (get_val_max_off_diagonal(j_mat) == 0)
+        {
+            break;
+        }
         update_c_s_params(j_mat);
         rotate_jac(j_mat);
         update_e_mat(j_mat);
@@ -623,4 +670,231 @@ void read_line_to_row(char *buffer, double *line, unsigned int dimension)
         // update the pointer to the buffer
         buffer += chars_read;
     }
+}
+
+// ----------------------------------------------------------------------------------//
+///////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////  The Eigengap Heuristic   //////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+// ----------------------------------------------------------------------------------//
+
+unsigned int find_k(jacobi_matrix * j_mat) {
+    // the eigan vectors matrix
+    e_vector * eigan_mat = j_mat->e_mat;
+    int top_limit = ((j_mat->mat)->dim) / 2;
+    int i, max_gap_index;
+    double current_gap, max_gap = 0;
+
+    for (i = 0; i < top_limit; i++)
+    {
+        // gap between two eigan-values
+        current_gap = fabs(eigan_mat[i+1].e_val - eigan_mat[i].e_val);
+        // in case of equality between gaps take the lowest index
+        if (current_gap > max_gap)
+        {
+            max_gap = current_gap;
+            max_gap_index = i;
+        }
+        
+    }
+    return max_gap_index + 1;
+}
+
+// ----------------------------------------------------------------------------------//
+///////////////////////////////////////////////////////////////////////////////////////
+///////// Steps 4-5 in Normalized Spectral Clustering Algorithm  //////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+// ----------------------------------------------------------------------------------//
+
+// form the matrix containing the first k eignan-vectors as colmuns 
+//(allocates memory for new matrix)
+matrix * create_u_matrix(jacobi_matrix * j_mat, unsigned int k) {
+    matrix * u_mat;
+    unsigned int n;
+    n = (j_mat->mat)->dim;
+    u_mat = init_mat(n, k);
+    int i, j;
+    for (i = 0; i < n; i++)
+    {
+       for (j = 0; j < k; j++)
+       {
+           (u_mat->data)[i][j] = (j_mat->e_mat)[j].vec[i];
+       }
+    }
+    return u_mat;
+}
+
+// calculate the l2 norm of a given row in matrix
+static double l2_norm_row_in_mat(matrix * mat, unsigned int row) {
+    double result = 0;
+    int i;
+    for (i = 0; i < mat->cols; i++)
+    {
+        result += SQUARE((mat->data)[row][i]);
+    }
+    result = sqrt(result);
+    return result;
+}
+
+// normlaize each row
+void normlize_rows(matrix * mat) {
+    int i, j;
+    double norm;
+    for (i = 0; i < mat->rows; i++)
+    {
+        norm = l2_norm_row_in_mat(mat, i);
+        for (j = 0; j < mat->cols ; j++)
+        {
+            (mat->data)[i][j] /= norm;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------------//
+///////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////  K-Means  //////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+// ----------------------------------------------------------------------------------//
+
+static void multiply_scalar(double *vector, double scalar, double *result, int dim)
+{
+    int i;
+    for (i = 0; i < dim; i++)
+    {
+        result[i] = vector[i] * (scalar);
+    }
+}
+
+static void add_vectors(double *a, double *b, double *result, int dim)
+{
+    int i;
+    for (i = 0; i < dim; i++)
+    {
+        result[i] = a[i] + b[i];
+    }
+}
+
+static double distacne(double *a, double *b, int dim)
+{
+    double sum = 0;
+    int i;
+    for (i = 0; i < dim; i++)
+    {
+        sum += SQUARE(a[i] - b[i]);
+    }
+    return sum;
+}
+
+static int closest_cluster_index(double *vector, double **centers, int k)
+{
+    int min_dist_index = 0, i;
+    double min_dist;
+    min_dist = distacne(vector, centers[0], k);
+    for (i = 0; i < k; i++)
+    {
+        double current_dist;
+        current_dist = distacne(vector, centers[i], k);
+        if (current_dist < min_dist)
+        {
+            min_dist = current_dist;
+            min_dist_index = i;
+        }
+        if (min_dist == 0)
+        {
+            break;
+        }
+    }
+    return min_dist_index;
+}
+
+void k_means(matrix * centers, matrix * vectors, unsigned int k)
+{
+    int i, j, l, n, dim;
+    matrix cluster_sums;
+    double ** vec_data;
+    double *negative_vec;
+    double inverse_size;
+    int *cluster_size;
+    int *which_cluster;
+    int new_closest_cluster;
+    n = vectors->rows;
+    dim = vectors->cols;
+    vec_data = vectors->data;
+    MALLOC_ARR_ASSERT(negative_vec, double, dim);
+    CALLOC_ARR_ASSERT(cluster_size, int, k);
+    MALLOC_ARR_ASSERT(which_cluster, int, n);
+    cluster_sums = *init_mat(k, dim);
+    double ** cluster_sums_data = cluster_sums.data;
+    for (i = 0; i < n; i++)
+    {
+        which_cluster[i] = -1;
+    }
+    for (i = 0; i < MAX_ITER; i++)
+    {
+        int differ = 0;
+        for (j = 0; j < n; j++)
+        {
+            new_closest_cluster = closest_cluster_index(vec_data[j], centers->data, k);
+            if (new_closest_cluster != which_cluster[j])
+            {
+                if (which_cluster[j] != -1)
+                {
+                    cluster_size[which_cluster[j]] -= 1;
+                    multiply_scalar(vec_data[j], -1, negative_vec, vectors->cols);
+                    add_vectors(cluster_sums_data[which_cluster[j]], negative_vec, cluster_sums_data[which_cluster[j]], vectors->cols);
+                }
+                cluster_size[new_closest_cluster] += 1;
+                add_vectors(cluster_sums_data[new_closest_cluster], vec_data[j], cluster_sums_data[new_closest_cluster], vectors->cols);
+                which_cluster[j] = new_closest_cluster;
+                differ = 1;
+            }
+        }
+        if (differ == 0)
+        {
+            break;
+        }
+        for (l = 0; l < k; l++)
+        {
+            if (cluster_size[l] != 0)
+            {
+                inverse_size = (double) 1 / cluster_size[l];
+                multiply_scalar(cluster_sums_data[l], inverse_size, (centers->data)[l], centers->cols);
+            }
+        }
+    }
+    free(negative_vec);
+    free(cluster_size);
+    free(which_cluster);
+    free_mat(&cluster_sums);
+}
+
+void spectral_clustering(unsigned int k, const char * filename) {
+    FILE * file_pointer = fopen(filename, "r");
+    ASSERT_WITH_MSG(file_pointer != NULL, ERROR_MSG);
+    
+    matrix * data_mat = read_file_to_mat(file_pointer);
+    fclose(file_pointer);
+
+    sym_matrix * l_norm = l_norm_mat(data_mat);
+    free(data_mat);
+
+    jacobi_matrix * jacobi_mat = init_jac_mat(l_norm);
+    jacobi(jacobi_mat);
+
+    if (k == 0)
+    {
+        k = find_k(jacobi_mat);
+    }
+    
+    matrix * u_mat = create_u_matrix(jacobi_mat, k);
+    free_jacobi(jacobi_mat);
+    normlize_rows(u_mat);
+
+    matrix * centeroids = init_mat(k, k);
+    k_means(centeroids, u_mat, k);
+    print_mat(centeroids);
+
+    free(centeroids);
+    free_mat(u_mat);
+
 }

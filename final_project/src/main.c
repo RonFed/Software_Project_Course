@@ -4,11 +4,13 @@
 
 int main(int argc, char const *argv[])
 {
-    FILE * fp;
-    char * filename = "final_project\\src\\python_scripts\\data1_data.csv";
-    fp = fopen(filename, "r");
-    matrix * mm = read_file_to_mat(fp);
-    print_mat(mm);
+    spectral_clustering(4, "data2_data.csv");
+    // FILE * fp;
+    // char * filename = "data2_data.csv";
+    // fp = fopen(filename, "r");
+    // matrix * mm = read_file_to_mat(fp);
+    // print_mat(mm);
+    // free_mat(mm);
 
     // int i, j;
     // unsigned int rows = 10;
@@ -59,6 +61,19 @@ int main(int argc, char const *argv[])
     // set_val_sym(rami,2,2,3);
     // jacobi_matrix * jm = init_jac_mat(rami);
     // jacobi(jm);
+    // print_e_mat(jm);
+    // matrix * m2 = create_u_matrix(jm,3);
+    // print_mat(m2);
+
+    // sym_matrix * rami;
+    // rami = init_sym_mat(3);
+    // set_val_sym(rami,0,0,3);
+    // set_val_sym(rami,1,1,2);
+    // set_val_sym(rami,2,2,4);
+    // print_sym_mat(rami);
+    // jacobi_matrix * jm = init_jac_mat(rami);
+    // jacobi(jm);
+    // print_e_mat(jm);
 
     // python example
     // sym_matrix *rami;
@@ -79,6 +94,9 @@ int main(int argc, char const *argv[])
     // print_sym_mat(jm->mat);
     // printf("-------------e_mat------\n");
     // print_e_mat(jm);
+    // matrix * m3 = create_u_matrix(jm, 3);
+    // normlize_rows(m3);
+    // print_mat(m3);
 
     // sym_matrix * sm2 = init_sym_mat(rows);
     //  for (i = 0; i < m->rows; i++)
