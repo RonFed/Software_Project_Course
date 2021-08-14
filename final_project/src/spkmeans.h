@@ -168,7 +168,7 @@ void set_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col, double va
 /* update the c and s params after new max is found */
 void update_c_s_params(jacobi_matrix *j_mat);
 /* rotate the jacobi matrix using c and s parmas */
-void rotate_jac(jacobi_matrix *j_mat);
+void rotate_jacobi(jacobi_matrix *j_mat);
 /* find new max efiicianly after rotation */
 void update_max_jac(jacobi_matrix *j_mat, int is_not_first);
 /* update j_mat->max_inds for row i */
@@ -178,9 +178,9 @@ void update_total_max_inds(jacobi_matrix *j_mat);
 /* get the value of max abs element off-diagonal */
 double get_val_max_off_diagonal(jacobi_matrix *j_mat);
 /* initialize eigan-vectors matrix (memeory allocation and set to identity matrix) */
-void init_e_mat(jacobi_matrix *j_mat);
+void init_eigan_mat(jacobi_matrix *j_mat);
 /* update eigan-vectors matrix after rotation (multiply by rotation matrix) */
-void update_e_mat(jacobi_matrix *j_mat);
+void update_eigan_mat(jacobi_matrix *j_mat);
 /* print the eigan-vectors matrix (each eigan-vector as a row) */
 void print_e_mat(jacobi_matrix *j_mat);
 /* print eigan-values as first row and then eigan-vectors as rows*/
@@ -233,3 +233,10 @@ void handle_degree_matrix(matrix* data_mat);
 void handle_lnorm_matrix(matrix* data_mat);
 
 void handle_jacobi_matrix(matrix* data_mat);
+
+
+/* 
+Python end-points
+*/
+
+

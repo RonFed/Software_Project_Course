@@ -390,7 +390,7 @@ sym_matrix *l_norm_mat(matrix *mat)
 ///////////////////////////////////////////////////////////////////////////////////////
 // ----------------------------------------------------------------------------------*/
 
-void init_e_mat(jacobi_matrix *j_mat)
+void init_eigan_mat(jacobi_matrix *j_mat)
 {
     unsigned int i, n;
     n = (j_mat->mat)->dim;
@@ -409,7 +409,7 @@ jacobi_matrix *init_jac_mat(sym_matrix *s_mat)
 {
     jacobi_matrix *jac_mat = (jacobi_matrix *)malloc(sizeof(jacobi_matrix));
     jac_mat->mat = s_mat;
-    init_e_mat(jac_mat);
+    init_eigan_mat(jac_mat);
     /* calloc for max inds array */
     CALLOC_ARR_ASSERT(jac_mat->max_inds, unsigned int, s_mat->dim);
     jac_mat->off_diff = 0;
@@ -456,8 +456,6 @@ void max_abs_val_initial(jacobi_matrix *j_mat)
             max_row = i;
         }
     }
-    /* symmetric matrix so we can change the indexes here
-    since the implementation of symmetric matrix used top triangle representation */
     j_mat->row_ind = max_row;
     j_mat->col_ind = (j_mat->max_inds)[max_row];
 }
@@ -490,7 +488,7 @@ void update_c_s_params(jacobi_matrix *j_mat)
     j_mat->s = s;
 }
 
-void update_e_mat(jacobi_matrix *j_mat)
+void update_eigan_mat(jacobi_matrix *j_mat)
 {
     e_vector *e_mat_data = j_mat->e_mat;
     unsigned int i, j, r;
@@ -535,15 +533,15 @@ void print_eigan_vectors_values(jacobi_matrix *j_mat)
     e_vector *e_mat_data = j_mat->e_mat;
     unsigned int n = (j_mat->mat)->dim;
     unsigned int i;
-    for (i = 0; i < n; i++)
+    for (i = 0; i < n - 1; i++)
     {
         printf("%.4f,", (e_mat_data[i].e_val));
     }
-    printf("\n");
+    printf("%.4f\n", (e_mat_data[n-1].e_val));
     print_e_mat(j_mat);
 }
 
-void rotate_jac(jacobi_matrix *j_mat)
+void rotate_jacobi(jacobi_matrix *j_mat)
 {
     sym_matrix *sm_data = j_mat->mat;
     unsigned int i, j, r;
@@ -678,7 +676,7 @@ void update_total_max_inds(jacobi_matrix *j_mat)
 int cmp_vecs(const void *vec1, const void *vec2)
 {
     /* if the two vectors have the same eigan-value, sort them by index (the smaller index first)
-    else sort them by the eigan-value - smaller one comes firdt */
+    else sort them by the eigan-value - smaller one comes first */
     double val1, val2;
     val1 = ((e_vector *)vec1)->e_val;
     val2 = ((e_vector *)vec2)->e_val;
@@ -719,10 +717,11 @@ void jacobi(jacobi_matrix *j_mat)
             break;
         }
         update_c_s_params(j_mat);
-        rotate_jac(j_mat);
-        update_e_mat(j_mat);
+        rotate_jacobi(j_mat);
+        update_eigan_mat(j_mat);
         iters++;
     } while (iters < MAX_JACOBI_ITERS && j_mat->off_diff > EPSILON);
+    printf("Number of iters in Jacobi is :%d\n", iters);
     /* setting each eigan-value to the coresponding eigan-vector */
     set_eigan_values(j_mat);
 }
