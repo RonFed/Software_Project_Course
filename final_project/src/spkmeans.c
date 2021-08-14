@@ -185,6 +185,7 @@ void free_sym_mat(sym_matrix *mat)
         free((mat->data)[i]);
     }
     free(mat->data);
+    free(mat);
 }
 
 sym_matrix* matrix_to_sym_matrix(matrix* mat) {

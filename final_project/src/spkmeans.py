@@ -17,7 +17,8 @@ def main():
     data = np.genfromtxt(file_path, delimiter=',')
     weights = sp.weights_mat(data.tolist())
     print_mat(weights)
-
+    degree = sp.degree_mat(data.tolist())
+    print_mat(degree)
 
 if __name__ == '__main__':
     main()

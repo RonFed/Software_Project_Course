@@ -41,6 +41,31 @@ static PyObject *convert_sym_mat_to_PyObject(sym_matrix *mat)
     return obj;
 }
 
+static PyObject *convert_diag_mat_to_PyObject(diag_matrix *mat)
+{
+    int i, j;
+    unsigned int dim;
+    PyObject *val;
+    dim = mat->dim;
+    PyObject *obj = PyList_New(dim);
+    for (i = 0; i < dim; i++)
+    {
+        PyObject *currnet = PyList_New(dim);
+        for (j = 0; j < dim; j++)
+        {
+            if (i == j)
+            {
+                val = Py_BuildValue("d", (mat->data)[i]);
+            } else {
+                val = Py_BuildValue("d", 0.0);
+            }
+            PyList_SetItem(currnet, j, val);
+        }
+        PyList_SetItem(obj, i, currnet);
+    }
+    return obj;
+}
+
 static matrix *convert_PyObject_to_mat(PyObject *mat_py_obj)
 {
     int i, j;
@@ -64,6 +89,7 @@ static matrix *convert_PyObject_to_mat(PyObject *mat_py_obj)
 static PyObject *weights_mat_c_api(PyObject *self, PyObject *args)
 {
     PyObject *data_arr_list;
+    PyObject *weights_mat_py;
     matrix *data_mat;
     sym_matrix *weights_mat_sym;
 
@@ -74,15 +100,42 @@ static PyObject *weights_mat_c_api(PyObject *self, PyObject *args)
 
     data_mat = convert_PyObject_to_mat(data_arr_list);
     weights_mat_sym = weights_mat(data_mat);
+    weights_mat_py = convert_sym_mat_to_PyObject(weights_mat_sym);
+    free_sym_mat(weights_mat_sym);
+    return weights_mat_py;
+}
 
-    return convert_sym_mat_to_PyObject(weights_mat_sym);
+static PyObject *degree_mat_c_api(PyObject *self, PyObject *args)
+{
+    PyObject *data_arr_list;
+    PyObject *diagonal_mat_py;
+    matrix *data_mat;
+    diag_matrix *diagonal_mat;
+
+    if (!PyArg_ParseTuple(args, "O", &data_arr_list))
+    {
+        return NULL;
+    }
+
+    data_mat = convert_PyObject_to_mat(data_arr_list);
+    diagonal_mat = degree_mat(data_mat);
+    diagonal_mat_py = convert_diag_mat_to_PyObject(diagonal_mat);
+    free_diag_mat(diagonal_mat);
+    return diagonal_mat_py;
 }
 
 static PyMethodDef capiMethods[] = {
     {"weights_mat",
      (PyCFunction)weights_mat_c_api,
      METH_VARARGS,
-     PyDoc_STR("Calculate the weights matrix of the given matrix")},
+     PyDoc_STR("Calculate the weights matrix of the given matrix")
+     },
+     {
+    "degree_mat",
+     (PyCFunction)degree_mat_c_api,
+     METH_VARARGS,
+     PyDoc_STR("Calculate the degree matrix of the given matrix")
+     },
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef moduledef = {
