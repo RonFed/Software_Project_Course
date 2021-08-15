@@ -547,7 +547,7 @@ void rotate_jacobi(jacobi_matrix *j_mat)
     sym_matrix *sm_data = j_mat->mat;
     unsigned int i, j, r;
     double curr_i, curr_j, new_i, new_j, new_ii, new_jj, c, s;
-    double positive_diff = 0, negative_diff = 0;
+    double positive_diff = 0.0, negative_diff = 0.0;
     i = j_mat->row_ind;
     j = j_mat->col_ind;
     c = j_mat->c;
@@ -595,7 +595,7 @@ void update_max_jac(jacobi_matrix *j_mat, int is_not_first)
         update_max_in_row(j_mat, curr_row_max_ind);
         update_max_in_row(j_mat, curr_col_max_ind);
         max_arr = j_mat->max_inds;
-        for (r = 1; r < (j_mat->mat)->dim; r++)
+        for (r = 0; r < (j_mat->mat)->dim; r++)
         {
             /* all rows excpet the two that were updated */
             if ((r != curr_row_max_ind) && (r != curr_col_max_ind))
@@ -722,7 +722,6 @@ void jacobi(jacobi_matrix *j_mat)
         update_eigan_mat(j_mat);
         iters++;
     } while (iters < MAX_JACOBI_ITERS && j_mat->off_diff > EPSILON);
-    printf("Number of iters in Jacobi is :%d\n", iters);
     /* setting each eigan-value to the coresponding eigan-vector */
     set_eigan_values(j_mat);
 }
