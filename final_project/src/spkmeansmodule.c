@@ -124,17 +124,46 @@ static PyObject *degree_mat_c_api(PyObject *self, PyObject *args)
     return diagonal_mat_py;
 }
 
+static PyObject *l_norm_mat_c_api(PyObject *self, PyObject *args)
+{
+    PyObject *data_arr_list;
+    PyObject *lnorm_mat_py;
+    matrix *data_mat;
+    sym_matrix *lnorm_m;
+
+    if (!PyArg_ParseTuple(args, "O", &data_arr_list))
+    {
+        return NULL;
+    }
+
+    data_mat = convert_PyObject_to_mat(data_arr_list);
+    lnorm_m = l_norm_mat(data_mat);
+    lnorm_mat_py = convert_sym_mat_to_PyObject(lnorm_m);
+    free_sym_mat(lnorm_m);
+    return lnorm_mat_py;
+}
+
+/*
+Functions exported to the extrenal API
+Can be called by Python
+*/
 static PyMethodDef capiMethods[] = {
     {"weights_mat",
      (PyCFunction)weights_mat_c_api,
      METH_VARARGS,
-     PyDoc_STR("Calculate the weights matrix of the given matrix")
+     PyDoc_STR("Calculate the weights matrix of a given matrix")
      },
      {
     "degree_mat",
      (PyCFunction)degree_mat_c_api,
      METH_VARARGS,
-     PyDoc_STR("Calculate the degree matrix of the given matrix")
+     PyDoc_STR("Calculate the degree matrix of a given matrix")
+     },
+     {
+    "l_norm_mat",
+     (PyCFunction)l_norm_mat_c_api,
+     METH_VARARGS,
+     PyDoc_STR("Calculate the normalized laplacian matrix of a given matrix")
      },
     {NULL, NULL, 0, NULL}};
 

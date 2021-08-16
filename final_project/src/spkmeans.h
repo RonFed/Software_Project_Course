@@ -235,8 +235,5 @@ void handle_lnorm_matrix(matrix* data_mat);
 void handle_jacobi_matrix(matrix* data_mat);
 
 
-/* 
-Python end-points
-*/
 
 

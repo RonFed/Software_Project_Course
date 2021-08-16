@@ -754,7 +754,7 @@ matrix *read_file_to_mat(FILE *file_pointer)
 
     /* assuming each numeber is less than 19 digits */
     buffer_size = dimension * 20;
-    buffer = MALLOC_ARR(char, buffer_size);
+    MALLOC_ARR_ASSERT(buffer, char, buffer_size);
 
     while (fgets(buffer, buffer_size, file_pointer))
     {
@@ -763,16 +763,17 @@ matrix *read_file_to_mat(FILE *file_pointer)
         {
             current_arr_len *= ARR_SIZE_MULTIPLY;
             data = (double **)realloc(data, current_arr_len * sizeof(double *));
-            assert(data);
+            ASSERT_WITH_MSG(data != NULL, ERROR_MSG);
         }
-
+        /* Allocate memory for current row*/
         CALLOC_ARR_ASSERT(data[lines_count], double, dimension);
+        /* Read data from buffer to current row and increase row counter*/
         read_line_to_row(buffer, data[lines_count++], dimension);
     }
     free(buffer);
     /* triming the final array */
     data = (double **)realloc(data, lines_count * sizeof(double *));
-
+    ASSERT_WITH_MSG(data != NULL, ERROR_MSG);
     data_mat->cols = dimension;
     data_mat->rows = lines_count;
     data_mat->data = data;

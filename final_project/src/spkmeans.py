@@ -19,6 +19,8 @@ def main():
     print_mat(weights)
     degree = sp.degree_mat(data.tolist())
     print_mat(degree)
+    lnorm = sp.l_norm_mat(data.tolist())
+    print_mat(lnorm)
 
 if __name__ == '__main__':
     main()
