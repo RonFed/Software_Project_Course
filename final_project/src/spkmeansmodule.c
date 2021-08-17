@@ -41,29 +41,57 @@ static PyObject *convert_sym_mat_to_PyObject(sym_matrix *mat)
     return obj;
 }
 
+/*The returned value is a 1D list containing the diagonal elements */
 static PyObject *convert_diag_mat_to_PyObject(diag_matrix *mat)
 {
     int i, j;
     unsigned int dim;
-    PyObject *val;
     dim = mat->dim;
-    PyObject *obj = PyList_New(dim);
+    PyObject *vector = PyList_New(dim);
     for (i = 0; i < dim; i++)
     {
-        PyObject *currnet = PyList_New(dim);
+        PyObject *val = Py_BuildValue("d", (mat->data)[i]);
+        PyList_SetItem(vector, i, val);
+    }
+    return vector;
+}
+
+/* The returned representation of the Jacobi matrix is a Python list :
+    first element is a list of eigan values
+    second element is a matrix (list of lists) containing the eiganvectors */
+static PyObject *convert_jacobi_mat_to_PyObject(jacobi_matrix *j_mat)
+{
+    int i, j;
+    unsigned int dim;
+    dim = j_mat->mat->dim;
+    PyObject *eigan_values_arr_py;
+    PyObject* eigan_mat_py;
+    PyObject *result = PyList_New(2);
+    
+    /* building the 1D array with eiganvalues*/
+    eigan_values_arr_py = PyList_New(dim);
+    for (i = 0; i < dim; i++)
+    {
+        PyObject *val = Py_BuildValue("d", (j_mat->e_mat)[i].e_val);
+        PyList_SetItem(eigan_values_arr_py, i, val);
+    }
+    PyList_SetItem(result, 0, eigan_values_arr_py);
+
+     /* building the 2D array with eiganvectors*/
+    eigan_mat_py = PyList_New(dim);
+    for (i = 0; i < dim; i++)
+    {
+        PyObject *currnet_row = PyList_New(dim);
         for (j = 0; j < dim; j++)
         {
-            if (i == j)
-            {
-                val = Py_BuildValue("d", (mat->data)[i]);
-            } else {
-                val = Py_BuildValue("d", 0.0);
-            }
-            PyList_SetItem(currnet, j, val);
+            PyObject *val = Py_BuildValue("d", ((j_mat->e_mat)[i].vec)[j]);
+            PyList_SetItem(currnet_row, j, val);
         }
-        PyList_SetItem(obj, i, currnet);
+        PyList_SetItem(eigan_mat_py, i, currnet_row);
     }
-    return obj;
+    PyList_SetItem(result, 1, eigan_mat_py);
+
+    return result;
 }
 
 static matrix *convert_PyObject_to_mat(PyObject *mat_py_obj)
@@ -143,6 +171,27 @@ static PyObject *l_norm_mat_c_api(PyObject *self, PyObject *args)
     return lnorm_mat_py;
 }
 
+static PyObject *jacobi_mat_c_api(PyObject *self, PyObject *args)
+{
+    PyObject *data_arr_list;
+    PyObject *jacobi_mat_data_py;
+    matrix *data_mat;
+    sym_matrix *data_sym_mat;
+    jacobi_matrix *jacobi_m;
+
+    if (!PyArg_ParseTuple(args, "O", &data_arr_list))
+    {
+        return NULL;
+    }
+
+    data_mat = convert_PyObject_to_mat(data_arr_list);
+    data_sym_mat = matrix_to_sym_matrix(data_mat);
+    jacobi_m = init_jac_mat(data_sym_mat);
+    jacobi(jacobi_m);
+    jacobi_mat_data_py = convert_jacobi_mat_to_PyObject(jacobi_m);
+    return jacobi_mat_data_py;
+}
+
 /*
 Functions exported to the extrenal API
 Can be called by Python
@@ -157,13 +206,19 @@ static PyMethodDef capiMethods[] = {
     "degree_mat",
      (PyCFunction)degree_mat_c_api,
      METH_VARARGS,
-     PyDoc_STR("Calculate the degree matrix of a given matrix")
+     PyDoc_STR("Calculate the degree matrix of a given matrix (return a 1D array of diagonal elements values")
      },
      {
     "l_norm_mat",
      (PyCFunction)l_norm_mat_c_api,
      METH_VARARGS,
      PyDoc_STR("Calculate the normalized laplacian matrix of a given matrix")
+     },
+    {
+    "jacobi_mat",
+     (PyCFunction)jacobi_mat_c_api,
+     METH_VARARGS,
+     PyDoc_STR("Calculate the eiganvalues and eiganvectoes using the jacobi algorithm")
      },
     {NULL, NULL, 0, NULL}};
 

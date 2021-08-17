@@ -83,7 +83,7 @@ int main(int argc, char const *argv[])
     {
         ASSERT_WITH_MSG(0, INVALID_INPUT_MSG);
     }
-
+    free(data_mat);
     return 0;
 }
 
@@ -120,7 +120,6 @@ void handle_jacobi_matrix(matrix* data_mat) {
     jacobi(jac_m);
     print_eigan_vectors_values(jac_m);
     free_jacobi(jac_m);
-    free(jac_m);
 }
 
 /*
@@ -188,6 +187,9 @@ void free_sym_mat(sym_matrix *mat)
     free(mat);
 }
 
+/* Converts a matrix object to symmetric matrix object by allocating memory for new
+    symmetric matrix and taking the upper triangle elements of the given matrix
+    For correctness, Assumes the original matrix is indeed symmetric */
 sym_matrix* matrix_to_sym_matrix(matrix* mat) {
     sym_matrix* result;
     unsigned int i, j;
@@ -429,6 +431,7 @@ void free_jacobi(jacobi_matrix *j_mat)
     free(j_mat->e_mat);
     /* free max-inds array */
     free(j_mat->max_inds);
+    free(j_mat);
 }
 
 void max_abs_val_initial(jacobi_matrix *j_mat)
