@@ -218,6 +218,26 @@ matrix *create_u_matrix(jacobi_matrix *j_mat, unsigned int k);
 void normlize_rows(matrix *mat);
 
 
+typedef struct
+{
+    /* The data matrix - each row is a data point */
+    matrix * vectors;
+    /* Centroids matrix - each row is a centroid */
+    matrix * centroids;
+    /* Each row is a vector sum of all the data points assoiciated to the releveant
+    cluster i.e if cluster j contains vec1, vec2, vec3 then the j-th row in clusters_sums is
+    a vector sum of vec1 + vec2 + vec3 */
+    matrix * clusters_sums;
+    /* 1D array sized as number of clusters containing their size */
+    unsigned int * clusters_size;
+    /* 1D array sized as number of data points containing the cluster index for each data-point
+    for an un-associated data point j whick_cluster[j] = -1 (Only initial value) */
+    int * which_cluster;
+} kmeans_data;
+
+
+matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k);
+
 /* SPECTRAL CLUSTERING FUNCTCION
 INPUT: k (may be 0 to trigger the The Eigengap Heuristic) 
        filename to csv formatted .txt or .csv files
@@ -233,7 +253,3 @@ void handle_degree_matrix(matrix* data_mat);
 void handle_lnorm_matrix(matrix* data_mat);
 
 void handle_jacobi_matrix(matrix* data_mat);
-
-
-
-

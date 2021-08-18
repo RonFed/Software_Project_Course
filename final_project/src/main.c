@@ -4,7 +4,7 @@
 
 int main(int argc, char const *argv[])
 {
-    spectral_clustering(4, "data2_data.csv");
+    // spectral_clustering(4, "data2_data.csv");
     // FILE * fp;
     // char * filename = "data2_data.csv";
     // fp = fopen(filename, "r");
@@ -61,6 +61,7 @@ int main(int argc, char const *argv[])
     // set_val_sym(rami,2,2,3);
     // jacobi_matrix * jm = init_jac_mat(rami);
     // jacobi(jm);
+    // print_eigan_vectors_values(jm);
     // print_e_mat(jm);
     // matrix * m2 = create_u_matrix(jm,3);
     // print_mat(m2);

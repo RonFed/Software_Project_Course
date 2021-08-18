@@ -912,24 +912,7 @@ void normlize_rows(matrix *mat)
 ///////////////////////////////////////////////////////////////////////////////////////
 // ----------------------------------------------------------------------------------*/
 
-static void multiply_scalar(double *vector, double scalar, double *result, unsigned int dim)
-{
-    unsigned int i;
-    for (i = 0; i < dim; i++)
-    {
-        result[i] = vector[i] * (scalar);
-    }
-}
-
-static void add_vectors(double *a, double *b, double *result, unsigned int dim)
-{
-    unsigned int i;
-    for (i = 0; i < dim; i++)
-    {
-        result[i] = a[i] + b[i];
-    }
-}
-
+/* Compute the euclidian distance between two vectors */
 static double distacne(double *a, double *b, unsigned int dim)
 {
     double sum = 0;
@@ -941,15 +924,24 @@ static double distacne(double *a, double *b, unsigned int dim)
     return sum;
 }
 
-static int closest_cluster_index(double *vector, double **centers, int k)
+/* Find the closest cluster to a given vector */
+static int closest_cluster_index(kmeans_data* kmeans_data, unsigned int vector_ind)
 {
-    int min_dist_index = 0, i;
+    unsigned int i, dim, k;
+    int min_dist_index = 0;
     double min_dist;
-    min_dist = distacne(vector, centers[0], k);
+    double * vector;
+    double * centroied;
+    dim = (kmeans_data->vectors)->cols;
+    k = (kmeans_data->centroids)->rows;
+    vector = ((kmeans_data->vectors)->data)[vector_ind];
+    centroied = ((kmeans_data->centroids)->data)[0];
+    min_dist = distacne(vector, centroied, dim);
     for (i = 0; i < k; i++)
     {
         double current_dist;
-        current_dist = distacne(vector, centers[i], k);
+        centroied = ((kmeans_data->centroids)->data)[i];
+        current_dist = distacne(vector, centroied, k);
         if (current_dist < min_dist)
         {
             min_dist = current_dist;
@@ -963,66 +955,159 @@ static int closest_cluster_index(double *vector, double **centers, int k)
     return min_dist_index;
 }
 
-void k_means(matrix *centers, matrix *vectors, unsigned int k)
-{
-    unsigned int i, j, l, n, dim;
-    matrix cluster_sums;
-    double **vec_data;
-    double **cluster_sums_data;
-    double *negative_vec;
-    double inverse_size;
-    int *cluster_size;
-    int *which_cluster;
-    int new_closest_cluster;
-    n = vectors->rows;
-    dim = vectors->cols;
-    vec_data = vectors->data;
-    MALLOC_ARR_ASSERT(negative_vec, double, dim);
-    CALLOC_ARR_ASSERT(cluster_size, int, k);
-    MALLOC_ARR_ASSERT(which_cluster, int, n);
-    cluster_sums = *init_mat(k, dim);
-    cluster_sums_data = cluster_sums.data;
-    for (i = 0; i < n; i++)
+/* Initialize kmeans_data :
+    vectors and centroids matrixes are given
+    allocate memory for clusters_sums matrix, cluster_size array and which_cluster array */
+static kmeans_data * init_kmeans(matrix *vectors, matrix * centroids, unsigned int k) {
+    unsigned int i;
+    kmeans_data* result;
+    matrix * clusters_sum;
+    unsigned int * clusters_size;
+    int * which_cluster;
+    clusters_sum = init_mat(k, vectors->cols);
+    CALLOC_ARR_ASSERT(clusters_size, unsigned int, k);
+    MALLOC_ARR_ASSERT(which_cluster, int, vectors->rows);
+    for (i = 0; i < vectors->rows; i++)
     {
         which_cluster[i] = -1;
     }
-    for (i = 0; i < MAX_ITER; i++)
+
+    result = (kmeans_data *) malloc(sizeof(kmeans_data));
+    ASSERT_WITH_MSG(result != NULL, ERROR_MSG);
+
+    result->vectors = vectors;
+    result->centroids = centroids;
+    result->clusters_size = clusters_size;
+    result->which_cluster = which_cluster;
+    result->clusters_sums = clusters_sum;
+    return result;
+}
+
+/* Remove a given vector to a target cluster, 
+update sum and cluster size accordingly */
+static void remove_vector_from_cluster(kmeans_data* kmeans_data, unsigned int vector_ind) {
+    unsigned int current_cluster, i;
+    matrix * clusters_sum;
+    double * vector = ((kmeans_data->vectors)->data)[vector_ind];
+    current_cluster = (kmeans_data->which_cluster)[vector_ind];
+
+    (kmeans_data->clusters_size)[current_cluster] -= 1;
+
+    clusters_sum = kmeans_data->clusters_sums;
+    for (i = 0; i < clusters_sum->cols ; i++)
     {
-        int differ = 0;
-        for (j = 0; j < n; j++)
+        (clusters_sum->data)[current_cluster][i] -= vector[i];
+    }
+}
+
+/* Add a given vector to a target cluster, 
+update sum and cluster size accordingly */
+static void add_vector_to_cluster(kmeans_data* kmeans_data, unsigned int vector_ind, unsigned int target_cluster) {
+    unsigned int i;
+    matrix * clusters_sum;
+    double * vector = ((kmeans_data->vectors)->data)[vector_ind];
+    
+    (kmeans_data->clusters_size)[target_cluster] += 1;
+
+    clusters_sum = kmeans_data->clusters_sums;
+    for (i = 0; i < clusters_sum->cols ; i++)
+    {
+        (clusters_sum->data)[target_cluster][i] += vector[i];
+    }
+
+    (kmeans_data->which_cluster)[vector_ind] = target_cluster;
+}
+
+/* Update the centroids :
+    given the vector sum of each cluster and number of vectors in each cluster
+    computer the updated centroid of each cluster by taking the mean */
+static void update_centroids(kmeans_data* kmeans_data) {
+    unsigned int i,j;
+    matrix * centroids;
+    matrix * centroids_sums;
+    unsigned int * clusters_size;
+    centroids = kmeans_data->centroids;
+    centroids_sums = kmeans_data->clusters_sums;
+    clusters_size = kmeans_data->clusters_size;
+    for (i = 0; i < centroids->rows; i++)
+    {
+        if (clusters_size[i] != 0)
         {
-            new_closest_cluster = closest_cluster_index(vec_data[j], centers->data, k);
-            if (new_closest_cluster != which_cluster[j])
+            for (j = 0; j < centroids->cols; j++)
             {
-                if (which_cluster[j] != -1)
-                {
-                    cluster_size[which_cluster[j]] -= 1;
-                    multiply_scalar(vec_data[j], -1, negative_vec, vectors->cols);
-                    add_vectors(cluster_sums_data[which_cluster[j]], negative_vec, cluster_sums_data[which_cluster[j]], vectors->cols);
-                }
-                cluster_size[new_closest_cluster] += 1;
-                add_vectors(cluster_sums_data[new_closest_cluster], vec_data[j], cluster_sums_data[new_closest_cluster], vectors->cols);
-                which_cluster[j] = new_closest_cluster;
-                differ = 1;
-            }
-        }
-        if (differ == 0)
-        {
-            break;
-        }
-        for (l = 0; l < k; l++)
-        {
-            if (cluster_size[l] != 0)
-            {
-                inverse_size = (double)1 / cluster_size[l];
-                multiply_scalar(cluster_sums_data[l], inverse_size, (centers->data)[l], centers->cols);
+                (centroids->data)[i][j] = ((centroids_sums->data)[i][j]) / (clusters_size[i]);
             }
         }
     }
-    free(negative_vec);
-    free(cluster_size);
-    free(which_cluster);
-    free_mat(&cluster_sums);
+}
+
+/* Main K-Means Algorithm :
+    centroids matrix is the inital centroids (every row a centroid) K rows dim columns
+        the centroids must be initialized by an external source
+    vectors matrix is the data matrix, every row is a data-point
+    centroids and vectors matrixes are asuumed to be initialized and allocates
+    The centroids matrix will contain the final centroids */
+matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k)
+{
+    unsigned int i, current_vector, vectors_num;
+    int new_closest_cluster;
+    matrix * final_centroids;
+    kmeans_data * kmeans_data;
+    kmeans_data = init_kmeans(vectors, centroids, k);
+    vectors_num = vectors->rows;
+
+    for (i = 0; i < MAX_ITER; i++)
+    {
+        int is_converged = 0;
+        /* Iterate over all data points*/
+        for (current_vector = 0; current_vector < vectors_num; current_vector++)
+        {
+            /* find the closest cluster*/
+            new_closest_cluster = closest_cluster_index(kmeans_data, current_vector);
+            if (new_closest_cluster != (kmeans_data->which_cluster)[current_vector])
+            {
+                /* Found a closer cluster */
+                if ((kmeans_data->which_cluster)[current_vector] != -1)
+                {
+                    /* Data point was already associated with a cluster
+                    Remove it from cluster */
+                    remove_vector_from_cluster(kmeans_data, current_vector);
+                }
+                /* Add the data point to new cluster*/
+                add_vector_to_cluster(kmeans_data, current_vector, new_closest_cluster);
+                is_converged = 1;
+            }
+        }
+        /* If last main iteration didn't move any data point to a new cluster */
+        if (is_converged == 0)
+        {
+            break;
+        }
+        update_centroids(kmeans_data);
+    }
+    /* Free the un-relevant data and keep the centroids*/
+    free_mat(kmeans_data->clusters_sums);
+    free(kmeans_data->which_cluster);
+    free(kmeans_data->clusters_size);
+    final_centroids = kmeans_data->centroids;
+    free(kmeans_data);
+    return final_centroids;
+}
+
+/* Simple init for centroids - the first k vectors in the vectors data
+   Allocates memory for the returned matrix
+   This should be called within the C implementation only */
+static matrix* centroids_init_simple(matrix* vectors, unsigned int k) {
+    unsigned int i,j;
+    matrix *centeroids = init_mat(k, vectors->cols);
+    for (i = 0; i < k; i++)
+    {
+        for (j = 0; j < vectors->cols; j++)
+        {
+            (centeroids->data)[i][j] = (vectors->data)[i][j];
+        }
+    } 
+    return centeroids;
 }
 
 matrix *spectral_clustering(unsigned int k, matrix *data_mat)
@@ -1058,7 +1143,7 @@ matrix *spectral_clustering(unsigned int k, matrix *data_mat)
 
     normlize_rows(u_mat);
 
-    centeroids = init_mat(k, k);
+    centeroids = centroids_init_simple(u_mat, k);
 
     k_means(centeroids, u_mat, k);
 
