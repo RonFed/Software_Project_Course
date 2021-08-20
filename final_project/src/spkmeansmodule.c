@@ -186,11 +186,92 @@ static PyObject *jacobi_mat_c_api(PyObject *self, PyObject *args)
 
     data_mat = convert_PyObject_to_mat(data_arr_list);
     data_sym_mat = matrix_to_sym_matrix(data_mat);
+    free_mat(data_mat);
+
     jacobi_m = init_jac_mat(data_sym_mat);
     jacobi(jacobi_m);
     jacobi_mat_data_py = convert_jacobi_mat_to_PyObject(jacobi_m);
+
+    free_jacobi(jacobi_m);
     return jacobi_mat_data_py;
 }
+
+/* Input : data matrix from python (list of lists)
+   Output : List conatainig k in index 0 and the calculated T matrix in index 1
+            k is calculated only when it is equal to 0.
+            T matrix is the result of step 5 in spectrul clustrering algorithm
+*/
+static PyObject *k_and_T_mat_c_api(PyObject *self, PyObject *args)
+{
+    PyObject *data_py;
+    unsigned int k;
+    matrix *data_mat;
+    sym_matrix *l_norm;
+    matrix *u_mat;
+    jacobi_matrix *jacobi_mat;
+    PyObject *result = PyList_New(2);
+
+    if (!PyArg_ParseTuple(args, "OI", &data_py, &k))
+    {
+        return NULL;
+    }
+
+    data_mat = convert_PyObject_to_mat(data_py);
+    
+    /* compute normalized laplacian */
+    l_norm = l_norm_mat(data_mat);
+    free_mat(data_mat);
+
+    /* find eiganvectors and eiganvalues using the Jacobi algorithm */
+    jacobi_mat = init_jac_mat(l_norm);
+    jacobi(jacobi_mat);
+
+    /* sorting the eigan-vectors */
+    qsort(jacobi_mat->e_mat, (jacobi_mat->mat)->dim, sizeof(e_vector), cmp_vecs);
+
+    if (k == 0)
+    {
+        k = find_k(jacobi_mat);
+    }
+
+    u_mat = create_u_matrix(jacobi_mat, k);
+
+    free_jacobi(jacobi_mat);
+
+    normlize_rows(u_mat);
+
+    PyList_SetItem(result, 0, Py_BuildValue("I", k));
+    PyList_SetItem(result, 1, convert_mat_to_PyObject(u_mat));
+    free_mat(u_mat);
+    return result;
+}
+
+/* Input : data matrix from python (list of lists) and initial centroids matrix
+   Output : final centroids matrix (list of lists) after kmeans is performed
+            on the data matrix using the initial centroids
+*/
+static PyObject *kmeans_from_centroids_c_api(PyObject *self, PyObject *args)
+{
+    PyObject *data_py;
+    PyObject *initial_centroids_py;
+    matrix * data;
+    matrix * centroids;
+    unsigned int k;
+    PyObject * final_centroids_py;
+
+    if (!PyArg_ParseTuple(args, "OO", &data_py, &initial_centroids_py))
+    {
+        return NULL;
+    }
+
+    data = convert_PyObject_to_mat(data_py);
+    centroids = convert_PyObject_to_mat(initial_centroids_py);
+    k = centroids->rows;
+    k_means(centroids, data, k);
+    final_centroids_py = convert_mat_to_PyObject(centroids);
+    return final_centroids_py;
+}
+
 
 /*
 Functions exported to the extrenal API
@@ -219,6 +300,18 @@ static PyMethodDef capiMethods[] = {
      (PyCFunction)jacobi_mat_c_api,
      METH_VARARGS,
      PyDoc_STR("Calculate the eiganvalues and eiganvectoes using the jacobi algorithm")
+     },
+     {
+    "k_and_T_mat",
+     (PyCFunction)k_and_T_mat_c_api,
+     METH_VARARGS,
+     PyDoc_STR("Calculate k (if k=0) and return the T matrix from spectral clustreing algorithm")
+     },
+     {
+    "kmeans_from_centroids",
+     (PyCFunction)kmeans_from_centroids_c_api,
+     METH_VARARGS,
+     PyDoc_STR("Perform kmeans on data matrix using the inital centroids")
      },
     {NULL, NULL, 0, NULL}};
 

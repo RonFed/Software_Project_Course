@@ -1058,7 +1058,7 @@ matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k)
 
     for (i = 0; i < MAX_ITER; i++)
     {
-        int is_converged = 0;
+        int not_converged = 0;
         /* Iterate over all data points*/
         for (current_vector = 0; current_vector < vectors_num; current_vector++)
         {
@@ -1075,11 +1075,11 @@ matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k)
                 }
                 /* Add the data point to new cluster*/
                 add_vector_to_cluster(kmeans_data, current_vector, new_closest_cluster);
-                is_converged = 1;
+                not_converged = 1;
             }
         }
         /* If last main iteration didn't move any data point to a new cluster */
-        if (is_converged == 0)
+        if (not_converged == 0)
         {
             break;
         }
@@ -1117,7 +1117,7 @@ matrix *spectral_clustering(unsigned int k, matrix *data_mat)
     matrix *u_mat;
     matrix *centeroids;
 
-    /* the inpuse must be in the form of k < N 
+    /* the input must be in the form of k < N 
     (number of clusters is less then number of data-points */
     ASSERT_WITH_MSG(k < data_mat->rows, INVALID_INPUT_MSG);
 
