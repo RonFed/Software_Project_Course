@@ -87,7 +87,6 @@ int main(int argc, char const *argv[])
     {
         ASSERT_WITH_MSG(0, INVALID_INPUT_MSG);
     }
-    free(data_mat);
     return 0;
 }
 
@@ -103,6 +102,7 @@ void handle_weight_matrix(matrix *data_mat)
     sym_matrix *weights_m = weights_mat(data_mat);
     print_sym_mat(weights_m);
     free_sym_mat(weights_m);
+    free_mat(data_mat);
 }
 
 void handle_degree_matrix(matrix *data_mat)
@@ -110,6 +110,7 @@ void handle_degree_matrix(matrix *data_mat)
     diag_matrix *degree_m = degree_mat(data_mat);
     print_diag_mat(degree_m);
     free_diag_mat(degree_m);
+    free_mat(data_mat);
 }
 
 void handle_lnorm_matrix(matrix *data_mat)
@@ -117,6 +118,7 @@ void handle_lnorm_matrix(matrix *data_mat)
     sym_matrix *l_norm_m = l_norm_mat(data_mat);
     print_sym_mat(l_norm_m);
     free_sym_mat(l_norm_m);
+    free_mat(data_mat);
 }
 
 void handle_jacobi_matrix(matrix *data_mat)
@@ -126,6 +128,7 @@ void handle_jacobi_matrix(matrix *data_mat)
     jacobi(jac_m);
     print_eigan_vectors_values(jac_m);
     free_jacobi(jac_m);
+    free_mat(data_mat);
 }
 
 /*
@@ -167,6 +170,7 @@ void free_mat(matrix *mat)
         free((mat->data)[i]);
     }
     free(mat->data);
+    free(mat);
 }
 
 sym_matrix *init_sym_mat(unsigned int dim)
@@ -360,6 +364,7 @@ diag_matrix *degree_mat(matrix *mat)
         /* sum of a row in the weights matrix */
         (degree_m->data)[i] = row_sum_sym_mat(weight_m, i);
     }
+    free_sym_mat(weight_m);
     return degree_m;
 }
 
@@ -438,6 +443,7 @@ void free_jacobi(jacobi_matrix *j_mat)
     free(j_mat->e_mat);
     /* free max-inds array */
     free(j_mat->max_inds);
+    free_sym_mat(j_mat->mat);
     free(j_mat);
 }
 
@@ -762,8 +768,8 @@ matrix *read_file_to_mat(FILE *file_pointer)
     dimension = find_dimension_from_first_line(file_pointer, &data[0]);
     lines_count++;
 
-    /* assuming each numeber is less than 19 digits */
-    buffer_size = dimension * 20;
+    /* assuming each numeber is less than 100 digits */
+    buffer_size = dimension * 100;
     MALLOC_ARR_ASSERT(buffer, char, buffer_size);
 
     while (fgets(buffer, buffer_size, file_pointer))
