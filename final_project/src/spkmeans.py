@@ -60,10 +60,14 @@ def print_jacobi(j_mat):
     # print the eiganvectors matrix
     print_mat(j_mat[1])
 
+# k-means++ algorithm
+#   INPUT: list of lists representing tha data
+#          k - number of clusters
+#   OUTOUT: tuple of 2 elements : first is a matrix containing the inital centroids
+#          second is a list containing the initial centroids indices
 def k_means_pp_alg(data, k):
-    n = len(data)
-    d = len(data[0])
-    # n, d = data.shape
+    data = np.array(data)
+    n, d = data.shape
     # setting seed to be consistent 
     np.random.seed(0)
     centers = np.full((n, d), 0.0, dtype=float)
@@ -85,6 +89,7 @@ def k_means_pp_alg(data, k):
         centers[z - 1] = data[centers_ids[z - 1]]
     return centers[:k], centers_ids
 
+# spectral clustrering goal has been requested
 def handle_spk(data, k):
     # get k and T matrix from C API 
     k_T_lst = sp.k_and_T_mat(data, k)
@@ -99,20 +104,7 @@ def handle_spk(data, k):
     # print the final centroids matrix
     print_mat(final_centers)
 
-def main():
-    # check validity of command line arguments
-    k, goal, file_path = read_args(sys.argv)
-
-    # read text to python's list of lists
-    try:
-        data = np.genfromtxt(file_path, delimiter=',').tolist()
-    except OSError:
-        assert False, invalid_input_msg
-
-    # valid k if it is given (positive)
-    if k > 0:
-        assert k < len(data), invalid_input_msg
-
+def handle_goal(goal, data, k):
     if (goal == Goal.SPK.value):
         handle_spk(data, k)
     elif (goal == Goal.WAM.value):
@@ -131,6 +123,21 @@ def main():
     else :
         assert False, invalid_input_msg
 
+def main():
+    # check validity of command line arguments
+    k, goal, file_path = read_args(sys.argv)
+
+    # read text to python's list of lists
+    try:
+        data = np.genfromtxt(file_path, delimiter=',').tolist()
+    except OSError:
+        assert False, invalid_input_msg
+
+    # validate k if it is given (positive)
+    if k > 0:
+        assert k < len(data), invalid_input_msg
+
+    handle_goal(goal, data, k)
 
 if __name__ == '__main__':
     main()

@@ -39,6 +39,7 @@ static void check_command_line_args(int argc, char const *argv[])
     ASSERT_WITH_MSG(is_legal_goal(argv[2]), INVALID_INPUT_MSG);
 }
 
+/* Main C interface */
 int main(int argc, char const *argv[])
 {
     FILE *file_pointer;
@@ -47,18 +48,21 @@ int main(int argc, char const *argv[])
     unsigned int k;
     matrix *data_mat;
 
+    /* Validate the command line arguments */
     check_command_line_args(argc, argv);
-    
+
     k = atoi(argv[1]);
     goal = argv[2];
     filename = argv[3];
 
+    /* Read the file to matrix */
     file_pointer = fopen(filename, "r");
     ASSERT_WITH_MSG(file_pointer != NULL, ERROR_MSG);
 
     data_mat = read_file_to_mat(file_pointer);
     fclose(file_pointer);
 
+    /* Handle the goal */
     if (strcmp(goal, "spk") == 0)
     {
         handle_spectral_clustering(k, data_mat);
@@ -96,7 +100,7 @@ void handle_spectral_clustering(unsigned int k, matrix *data_mat)
 
 void handle_weight_matrix(matrix *data_mat)
 {
-    sym_matrix* weights_m = weights_mat(data_mat);
+    sym_matrix *weights_m = weights_mat(data_mat);
     print_sym_mat(weights_m);
     free_sym_mat(weights_m);
 }
@@ -108,15 +112,17 @@ void handle_degree_matrix(matrix *data_mat)
     free_diag_mat(degree_m);
 }
 
-void handle_lnorm_matrix(matrix* data_mat) {
-    sym_matrix* l_norm_m = l_norm_mat(data_mat);
+void handle_lnorm_matrix(matrix *data_mat)
+{
+    sym_matrix *l_norm_m = l_norm_mat(data_mat);
     print_sym_mat(l_norm_m);
     free_sym_mat(l_norm_m);
 }
 
-void handle_jacobi_matrix(matrix* data_mat) {
-    sym_matrix* sym_m = matrix_to_sym_matrix(data_mat);
-    jacobi_matrix* jac_m = init_jac_mat(sym_m);
+void handle_jacobi_matrix(matrix *data_mat)
+{
+    sym_matrix *sym_m = matrix_to_sym_matrix(data_mat);
+    jacobi_matrix *jac_m = init_jac_mat(sym_m);
     jacobi(jac_m);
     print_eigan_vectors_values(jac_m);
     free_jacobi(jac_m);
@@ -190,8 +196,9 @@ void free_sym_mat(sym_matrix *mat)
 /* Converts a matrix object to symmetric matrix object by allocating memory for new
     symmetric matrix and taking the upper triangle elements of the given matrix
     For correctness, Assumes the original matrix is indeed symmetric */
-sym_matrix* matrix_to_sym_matrix(matrix* mat) {
-    sym_matrix* result;
+sym_matrix *matrix_to_sym_matrix(matrix *mat)
+{
+    sym_matrix *result;
     unsigned int i, j;
     result = init_sym_mat(mat->rows);
     for (i = 0; i < mat->rows; i++)
@@ -439,7 +446,7 @@ void max_abs_val_initial(jacobi_matrix *j_mat)
     double max_total = -1, max_in_row, curr_abs;
     unsigned int i, j;
     sym_matrix *sm = j_mat->mat;
-    unsigned int max_row;
+    unsigned int max_row = 0;
     for (i = 0; i < sm->dim; i++)
     {
         /* for each row find the max element */
@@ -541,7 +548,7 @@ void print_eigan_vectors_values(jacobi_matrix *j_mat)
     {
         printf("%.4f,", (e_mat_data[i].e_val));
     }
-    printf("%.4f\n", (e_mat_data[n-1].e_val));
+    printf("%.4f\n", (e_mat_data[n - 1].e_val));
     print_e_mat(j_mat);
 }
 
@@ -659,7 +666,7 @@ double get_val_max_off_diagonal(jacobi_matrix *j_mat)
 void update_total_max_inds(jacobi_matrix *j_mat)
 {
     double max = -1, curr;
-    unsigned int r, max_row, max_col;
+    unsigned int r, max_row = 0, max_col = 0;
     /* last row doesn't contain relevant elements (just one element on diagonal) */
     for (r = 0; r < (j_mat->mat)->dim - 1; r++)
     {
@@ -836,7 +843,7 @@ unsigned int find_k(jacobi_matrix *j_mat)
     /* the eigan vectors matrix */
     e_vector *eigan_mat = j_mat->e_mat;
     unsigned int top_limit = ((j_mat->mat)->dim) / 2;
-    unsigned int i, max_gap_index;
+    unsigned int i, max_gap_index = 0;
     double current_gap, max_gap = 0;
 
     for (i = 0; i < top_limit; i++)
@@ -899,9 +906,12 @@ void normlize_rows(matrix *mat)
     for (i = 0; i < mat->rows; i++)
     {
         norm = l2_norm_row_in_mat(mat, i);
-        for (j = 0; j < mat->cols; j++)
+        if (norm != 0)
         {
-            (mat->data)[i][j] /= norm;
+            for (j = 0; j < mat->cols; j++)
+            {
+                (mat->data)[i][j] /= norm;
+            }
         }
     }
 }
@@ -925,13 +935,13 @@ static double distacne(double *a, double *b, unsigned int dim)
 }
 
 /* Find the closest cluster to a given vector */
-static int closest_cluster_index(kmeans_data* kmeans_data, unsigned int vector_ind)
+static int closest_cluster_index(kmeans_data *kmeans_data, unsigned int vector_ind)
 {
     unsigned int i, dim, k;
     int min_dist_index = 0;
     double min_dist;
-    double * vector;
-    double * centroied;
+    double *vector;
+    double *centroied;
     dim = (kmeans_data->vectors)->cols;
     k = (kmeans_data->centroids)->rows;
     vector = ((kmeans_data->vectors)->data)[vector_ind];
@@ -958,12 +968,13 @@ static int closest_cluster_index(kmeans_data* kmeans_data, unsigned int vector_i
 /* Initialize kmeans_data :
     vectors and centroids matrixes are given
     allocate memory for clusters_sums matrix, cluster_size array and which_cluster array */
-static kmeans_data * init_kmeans(matrix *vectors, matrix * centroids, unsigned int k) {
+static kmeans_data *init_kmeans(matrix *vectors, matrix *centroids, unsigned int k)
+{
     unsigned int i;
-    kmeans_data* result;
-    matrix * clusters_sum;
-    unsigned int * clusters_size;
-    int * which_cluster;
+    kmeans_data *result;
+    matrix *clusters_sum;
+    unsigned int *clusters_size;
+    int *which_cluster;
     clusters_sum = init_mat(k, vectors->cols);
     CALLOC_ARR_ASSERT(clusters_size, unsigned int, k);
     MALLOC_ARR_ASSERT(which_cluster, int, vectors->rows);
@@ -972,7 +983,7 @@ static kmeans_data * init_kmeans(matrix *vectors, matrix * centroids, unsigned i
         which_cluster[i] = -1;
     }
 
-    result = (kmeans_data *) malloc(sizeof(kmeans_data));
+    result = (kmeans_data *)malloc(sizeof(kmeans_data));
     ASSERT_WITH_MSG(result != NULL, ERROR_MSG);
 
     result->vectors = vectors;
@@ -985,16 +996,17 @@ static kmeans_data * init_kmeans(matrix *vectors, matrix * centroids, unsigned i
 
 /* Remove a given vector to a target cluster, 
 update sum and cluster size accordingly */
-static void remove_vector_from_cluster(kmeans_data* kmeans_data, unsigned int vector_ind) {
+static void remove_vector_from_cluster(kmeans_data *kmeans_data, unsigned int vector_ind)
+{
     unsigned int current_cluster, i;
-    matrix * clusters_sum;
-    double * vector = ((kmeans_data->vectors)->data)[vector_ind];
+    matrix *clusters_sum;
+    double *vector = ((kmeans_data->vectors)->data)[vector_ind];
     current_cluster = (kmeans_data->which_cluster)[vector_ind];
 
     (kmeans_data->clusters_size)[current_cluster] -= 1;
 
     clusters_sum = kmeans_data->clusters_sums;
-    for (i = 0; i < clusters_sum->cols ; i++)
+    for (i = 0; i < clusters_sum->cols; i++)
     {
         (clusters_sum->data)[current_cluster][i] -= vector[i];
     }
@@ -1002,15 +1014,16 @@ static void remove_vector_from_cluster(kmeans_data* kmeans_data, unsigned int ve
 
 /* Add a given vector to a target cluster, 
 update sum and cluster size accordingly */
-static void add_vector_to_cluster(kmeans_data* kmeans_data, unsigned int vector_ind, unsigned int target_cluster) {
+static void add_vector_to_cluster(kmeans_data *kmeans_data, unsigned int vector_ind, unsigned int target_cluster)
+{
     unsigned int i;
-    matrix * clusters_sum;
-    double * vector = ((kmeans_data->vectors)->data)[vector_ind];
-    
+    matrix *clusters_sum;
+    double *vector = ((kmeans_data->vectors)->data)[vector_ind];
+
     (kmeans_data->clusters_size)[target_cluster] += 1;
 
     clusters_sum = kmeans_data->clusters_sums;
-    for (i = 0; i < clusters_sum->cols ; i++)
+    for (i = 0; i < clusters_sum->cols; i++)
     {
         (clusters_sum->data)[target_cluster][i] += vector[i];
     }
@@ -1021,11 +1034,12 @@ static void add_vector_to_cluster(kmeans_data* kmeans_data, unsigned int vector_
 /* Update the centroids :
     given the vector sum of each cluster and number of vectors in each cluster
     computer the updated centroid of each cluster by taking the mean */
-static void update_centroids(kmeans_data* kmeans_data) {
-    unsigned int i,j;
-    matrix * centroids;
-    matrix * centroids_sums;
-    unsigned int * clusters_size;
+static void update_centroids(kmeans_data *kmeans_data)
+{
+    unsigned int i, j;
+    matrix *centroids;
+    matrix *centroids_sums;
+    unsigned int *clusters_size;
     centroids = kmeans_data->centroids;
     centroids_sums = kmeans_data->clusters_sums;
     clusters_size = kmeans_data->clusters_size;
@@ -1047,12 +1061,12 @@ static void update_centroids(kmeans_data* kmeans_data) {
     vectors matrix is the data matrix, every row is a data-point
     centroids and vectors matrixes are asuumed to be initialized and allocates
     The centroids matrix will contain the final centroids */
-matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k)
+matrix *k_means(matrix *centroids, matrix *vectors, unsigned int k)
 {
     unsigned int i, current_vector, vectors_num;
     int new_closest_cluster;
-    matrix * final_centroids;
-    kmeans_data * kmeans_data;
+    matrix *final_centroids;
+    kmeans_data *kmeans_data;
     kmeans_data = init_kmeans(vectors, centroids, k);
     vectors_num = vectors->rows;
 
@@ -1078,7 +1092,7 @@ matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k)
                 not_converged = 1;
             }
         }
-        /* If last main iteration didn't move any data point to a new cluster */
+        /* If last main iteration didn't move any data point to a new cluster --> converged */
         if (not_converged == 0)
         {
             break;
@@ -1097,8 +1111,9 @@ matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k)
 /* Simple init for centroids - the first k vectors in the vectors data
    Allocates memory for the returned matrix
    This should be called within the C implementation only */
-static matrix* centroids_init_simple(matrix* vectors, unsigned int k) {
-    unsigned int i,j;
+static matrix *centroids_init_simple(matrix *vectors, unsigned int k)
+{
+    unsigned int i, j;
     matrix *centeroids = init_mat(k, vectors->cols);
     for (i = 0; i < k; i++)
     {
@@ -1106,7 +1121,7 @@ static matrix* centroids_init_simple(matrix* vectors, unsigned int k) {
         {
             (centeroids->data)[i][j] = (vectors->data)[i][j];
         }
-    } 
+    }
     return centeroids;
 }
 
@@ -1136,15 +1151,16 @@ matrix *spectral_clustering(unsigned int k, matrix *data_mat)
     {
         k = find_k(jacobi_mat);
     }
-
+    /* Step 4 - U matrix containing the first k eiganvectors as columns */
     u_mat = create_u_matrix(jacobi_mat, k);
 
     free_jacobi(jacobi_mat);
-
+    /* Step 5 - Create T matrix by normalize each row in U
+    (not allocating new memory) - done in-place */
     normlize_rows(u_mat);
-
+    /* Simple init for centroids - Only for C interface */
     centeroids = centroids_init_simple(u_mat, k);
-
+    /* Step 6 K-Means Algorithm */
     k_means(centeroids, u_mat, k);
 
     free_mat(u_mat);

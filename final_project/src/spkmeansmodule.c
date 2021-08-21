@@ -2,9 +2,12 @@
 #include <Python.h>
 #include "spkmeans.h"
 
+/* converting a C object representing matrix to a Python object
+   i.e list of lists
+*/
 static PyObject *convert_mat_to_PyObject(matrix *mat)
 {
-    int i, j;
+    unsigned int i, j;
     unsigned int rows, cols;
     rows = mat->rows;
     cols = mat->cols;
@@ -24,7 +27,7 @@ static PyObject *convert_mat_to_PyObject(matrix *mat)
 
 static PyObject *convert_sym_mat_to_PyObject(sym_matrix *mat)
 {
-    int i, j;
+    unsigned int i, j;
     unsigned int dim;
     dim = mat->dim;
     PyObject *obj = PyList_New(dim);
@@ -44,8 +47,7 @@ static PyObject *convert_sym_mat_to_PyObject(sym_matrix *mat)
 /*The returned value is a 1D list containing the diagonal elements */
 static PyObject *convert_diag_mat_to_PyObject(diag_matrix *mat)
 {
-    int i, j;
-    unsigned int dim;
+    unsigned int i, dim;
     dim = mat->dim;
     PyObject *vector = PyList_New(dim);
     for (i = 0; i < dim; i++)
@@ -61,7 +63,7 @@ static PyObject *convert_diag_mat_to_PyObject(diag_matrix *mat)
     second element is a matrix (list of lists) containing the eiganvectors */
 static PyObject *convert_jacobi_mat_to_PyObject(jacobi_matrix *j_mat)
 {
-    int i, j;
+    unsigned int i, j;
     unsigned int dim;
     dim = j_mat->mat->dim;
     PyObject *eigan_values_arr_py;
@@ -96,7 +98,7 @@ static PyObject *convert_jacobi_mat_to_PyObject(jacobi_matrix *j_mat)
 
 static matrix *convert_PyObject_to_mat(PyObject *mat_py_obj)
 {
-    int i, j;
+    unsigned int i, j;
     unsigned int rows, cols;
     matrix *result;
     rows = PyObject_Length(mat_py_obj);
@@ -233,14 +235,17 @@ static PyObject *k_and_T_mat_c_api(PyObject *self, PyObject *args)
     {
         k = find_k(jacobi_mat);
     }
-
+    /* Step 4 - U matrix containing the first k eiganvectors as columns */
     u_mat = create_u_matrix(jacobi_mat, k);
 
     free_jacobi(jacobi_mat);
-
+     /* Step 5 - Create T matrix by normalize each row in U
+    (not allocating new memory) - done in-place */
     normlize_rows(u_mat);
 
+    /* First element in the returned list is k */
     PyList_SetItem(result, 0, Py_BuildValue("I", k));
+    /* Second element in the returned list is T matrix*/
     PyList_SetItem(result, 1, convert_mat_to_PyObject(u_mat));
     free_mat(u_mat);
     return result;
@@ -265,6 +270,7 @@ static PyObject *kmeans_from_centroids_c_api(PyObject *self, PyObject *args)
     }
 
     data = convert_PyObject_to_mat(data_py);
+    /* Initial centroids from python to C matrix*/
     centroids = convert_PyObject_to_mat(initial_centroids_py);
     k = centroids->rows;
     k_means(centroids, data, k);

@@ -122,6 +122,7 @@ sym_matrix *l_norm_mat(matrix *mat);
 JACOBI ALGORITHM FUNCTIONS AND STRUCTURES
 */
 
+/* Eiganvector */
 typedef struct
 {
     /*eiganvalue*/
@@ -241,8 +242,13 @@ matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k);
 /* SPECTRAL CLUSTERING FUNCTCION
 INPUT: k (may be 0 to trigger the The Eigengap Heuristic) 
        filename to csv formatted .txt or .csv files
+OUTPUT: Centroids matrix containing the final centroids
 */
 matrix * spectral_clustering(unsigned int k, matrix * data_mat);
+
+/*
+Handlers functions used in main C program to wrap each goal
+*/
 
 void handle_spectral_clustering(unsigned int k, matrix * data_mat);
 
