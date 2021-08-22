@@ -95,10 +95,6 @@ void print_diag_mat(diag_matrix *mat);
 WEIGHT MATRIX RELATED FUNCTIONS 
 */
 
-/* L2 Distance between two rows in matrix */
-double l2_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2);
-/* exp norm as defined in the weights matrix */
-double exp_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2);
 /* Calculate weight matrix of a given matrix (allocating memory for weights matrix) */
 sym_matrix *weights_mat(matrix *mat);
 
@@ -109,7 +105,7 @@ DEGREE MATRIX RELATED FUNCTION
 /* Sum of specific row in a symmetric matrix */
 double row_sum_sym_mat(sym_matrix *mat, unsigned int row);
 /* Calculate the degree matrix */
-diag_matrix *degree_mat(matrix *mat);
+diag_matrix *degree_mat_from_data(matrix *mat);
 
 /*
 NORMALIZED LAPLACIAN MATRIX FUNCTION
@@ -204,10 +200,6 @@ TEXT PARSING
 */
 
 matrix *read_file_to_mat(FILE *file_pointer);
-/* find the dimension (number of numbers in each row) used for the first line only */
-unsigned int find_dimension_from_first_line(FILE *file_pointer, double **first_line);
-
-void read_line_to_row(char *buffer, double *line, unsigned int dimension);
 
 /*
 NORMLIZING THE EIGAN MAT BEFORE K-MEAN

@@ -148,7 +148,7 @@ static PyObject *degree_mat_c_api(PyObject *self, PyObject *args)
     }
 
     data_mat = convert_PyObject_to_mat(data_arr_list);
-    diagonal_mat = degree_mat(data_mat);
+    diagonal_mat = degree_mat_from_data(data_mat);
     diagonal_mat_py = convert_diag_mat_to_PyObject(diagonal_mat);
     free_diag_mat(diagonal_mat);
     return diagonal_mat_py;

@@ -107,7 +107,7 @@ void handle_weight_matrix(matrix *data_mat)
 
 void handle_degree_matrix(matrix *data_mat)
 {
-    diag_matrix *degree_m = degree_mat(data_mat);
+    diag_matrix *degree_m = degree_mat_from_data(data_mat);
     print_diag_mat(degree_m);
     free_diag_mat(degree_m);
     free_mat(data_mat);
@@ -134,6 +134,8 @@ void handle_jacobi_matrix(matrix *data_mat)
 /*
 GENERAL MATRIX FUNCTIONS
 */
+
+/* Allocate memory for a new matrix object sized rows * cols of double */
 matrix *init_mat(unsigned int rows, unsigned int cols)
 {
     unsigned int i;
@@ -148,6 +150,7 @@ matrix *init_mat(unsigned int rows, unsigned int cols)
     return mat;
 }
 
+/* Print matrix object in CSV format */
 void print_mat(matrix *mat)
 {
     unsigned int i, j;
@@ -233,7 +236,9 @@ void print_sym_mat(sym_matrix *mat)
         printf("\n");
     }
 }
-
+/* Getter for symmetric matrix 
+logic is requiered becouse of the memory allocatin for symmetric matrx 
+*/
 double get_val_sym(sym_matrix *mat, unsigned int row, unsigned col)
 {
     if (col >= row)
@@ -268,6 +273,7 @@ void free_diag_mat(diag_matrix *mat)
     free(mat);
 }
 
+/* Print diagonal matrix, all elments except the diagonal elements are 0 */
 void print_diag_mat(diag_matrix *mat)
 {
     unsigned int i, j;
@@ -297,7 +303,8 @@ void print_diag_mat(diag_matrix *mat)
 WEIGHTS MATRIX FUNCTIONS
 */
 
-double l2_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
+/* L2 Distance between two rows in matrix */
+static double l2_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
 {
     double result, dif;
     unsigned int i;
@@ -312,7 +319,8 @@ double l2_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
     return result;
 }
 
-double exp_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
+/* exp norm as defined in the weights matrix */
+static double exp_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
 {
     double l2_norm = l2_norm_vectors(mat, row1, row2);
     double result;
@@ -353,7 +361,8 @@ double row_sum_sym_mat(sym_matrix *mat, unsigned int row)
     return sum;
 }
 
-diag_matrix *degree_mat(matrix *mat)
+/* Compute the degree matrix from data matrix (including weight matrix inside this function) */
+diag_matrix *degree_mat_from_data(matrix *mat)
 {
     unsigned int i;
     /* allocating memory for degree mat as diagonal matrix */
@@ -368,11 +377,26 @@ diag_matrix *degree_mat(matrix *mat)
     return degree_m;
 }
 
+/* Compute the degree matrix from a given weights matrix */
+static diag_matrix *degree_mat_from_wieght_mat(sym_matrix *weights_m)
+{
+    unsigned int i;
+    /* allocating memory for degree mat as diagonal matrix */
+    diag_matrix *degree_m = init_diag_mat(weights_m->dim);
+    for (i = 0; i < weights_m->dim; i++)
+    {
+        /* sum of a row in the weights matrix */
+        (degree_m->data)[i] = row_sum_sym_mat(weights_m, i);
+    }
+    return degree_m;
+}
+
+/* Compute normalized Laplacian matrix from data matrix */
 sym_matrix *l_norm_mat(matrix *mat)
 {
     sym_matrix *l_norm_m = init_sym_mat(mat->rows);
     sym_matrix *weight_m = weights_mat(mat);
-    diag_matrix *degree_m = degree_mat(mat);
+    diag_matrix *degree_m = degree_mat_from_wieght_mat(weight_m);
     double curr_weight, curr_d_i, curr_d_j, d_sqrt;
     unsigned int i, j;
     for (i = 0; i < l_norm_m->dim; i++)
@@ -748,6 +772,53 @@ void jacobi(jacobi_matrix *j_mat)
 ///////////////////////////////////////////////////////////////////////////////////////
 // ----------------------------------------------------------------------------------*/
 
+/* File is open, read the first line into first_line - looking for CSV format
+first line is a pointer to a pointer that may change using realloc (since dimension is not known)
+return the dimension of the data i.e how many elements found in the first row (assuming each row will have
+the same dimension) */
+static unsigned int find_dimension_from_first_line(FILE *file_pointer, double **first_line)
+{
+    double current_element;
+    char current_delimeter;
+    unsigned int dimension = 0;
+    unsigned int current_arr_len = BASE_ARR_SIZE;
+
+    while (fscanf(file_pointer, "%lf%c", &current_element, &current_delimeter) == 2)
+    {
+        /* rarely happens - first line is over BASE_ARR_SIZE elements */
+        if (dimension == current_arr_len)
+        {
+            current_arr_len *= ARR_SIZE_MULTIPLY;
+            (*first_line) = realloc(*first_line, current_arr_len * sizeof(double));
+            assert(*first_line);
+        }
+        (*first_line)[dimension] = current_element;
+        dimension++;
+        if (current_delimeter == '\n')
+        {
+            break;
+        }
+    }
+    (*first_line) = realloc(*first_line, dimension * sizeof(double));
+    return dimension;
+}
+
+/* read data from string buffer to line (assuming dimension elements in line) */
+static void read_line_to_row(char *buffer, double *line, unsigned int dimension)
+{
+    double current_element;
+    unsigned int i;
+    int chars_read;
+
+    for (i = 0; i < dimension; i++)
+    {
+        sscanf(buffer, "%lf,%n", &current_element, &chars_read);
+        line[i] = current_element;
+        /* update the pointer to the buffer */
+        buffer += chars_read;
+    }
+}
+
 /* main parsing - return matrix object from csv formatted file */
 matrix *read_file_to_mat(FILE *file_pointer)
 {
@@ -794,48 +865,6 @@ matrix *read_file_to_mat(FILE *file_pointer)
     data_mat->rows = lines_count;
     data_mat->data = data;
     return data_mat;
-}
-
-unsigned int find_dimension_from_first_line(FILE *file_pointer, double **first_line)
-{
-    double current_element;
-    char current_delimeter;
-    unsigned int dimension = 0;
-    unsigned int current_arr_len = BASE_ARR_SIZE;
-
-    while (fscanf(file_pointer, "%lf%c", &current_element, &current_delimeter) == 2)
-    {
-        /* rarely happens - first line is over BASE_ARR_SIZE elements */
-        if (dimension == current_arr_len)
-        {
-            current_arr_len *= ARR_SIZE_MULTIPLY;
-            (*first_line) = realloc(*first_line, current_arr_len * sizeof(double));
-            assert(*first_line);
-        }
-        (*first_line)[dimension] = current_element;
-        dimension++;
-        if (current_delimeter == '\n')
-        {
-            break;
-        }
-    }
-    (*first_line) = realloc(*first_line, dimension * sizeof(double));
-    return dimension;
-}
-
-void read_line_to_row(char *buffer, double *line, unsigned int dimension)
-{
-    double current_element;
-    unsigned int i;
-    int chars_read;
-
-    for (i = 0; i < dimension; i++)
-    {
-        sscanf(buffer, "%lf,%n", &current_element, &chars_read);
-        line[i] = current_element;
-        /* update the pointer to the buffer */
-        buffer += chars_read;
-    }
 }
 
 /* ----------------------------------------------------------------------------------//
