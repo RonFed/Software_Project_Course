@@ -34,7 +34,7 @@ GENERAL USE MACROS
 #define ZERO_4F "0.0000"
 #define SIGN(X) (((X) >= 0) ? 1 : -1)
 #define SQUARE(X) ((X) * (X))
-#define EPSILON 0.001
+#define EPSILON 1.0e-15
 #define BASE_ARR_SIZE 100
 #define ARR_SIZE_MULTIPLY 2
 #define MAX_ITER 300
@@ -156,8 +156,6 @@ typedef struct
 jacobi_matrix *init_jac_mat(sym_matrix *s_mat);
 /* free the allocated memory in jacobi matrix */
 void free_jacobi(jacobi_matrix *j_mat);
-/* Initail abs value lookup */
-void max_abs_val_initial(jacobi_matrix *j_mat);
 /* getter for jacobi matrix */
 double get_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col);
 /* set a specifi cell in jacobi matrix to given value */
@@ -166,14 +164,6 @@ void set_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col, double va
 void update_c_s_params(jacobi_matrix *j_mat);
 /* rotate the jacobi matrix using c and s parmas */
 void rotate_jacobi(jacobi_matrix *j_mat);
-/* find new max efiicianly after rotation */
-void update_max_jac(jacobi_matrix *j_mat, int is_not_first);
-/* update j_mat->max_inds for row i */
-void update_max_in_row(jacobi_matrix *j_mat, unsigned int row);
-/* upatate the toal max and row_ind, col_ind fields */
-void update_total_max_inds(jacobi_matrix *j_mat);
-/* get the value of max abs element off-diagonal */
-double get_val_max_off_diagonal(jacobi_matrix *j_mat);
 /* initialize eigan-vectors matrix (memeory allocation and set to identity matrix) */
 void init_eigan_mat(jacobi_matrix *j_mat);
 /* update eigan-vectors matrix after rotation (multiply by rotation matrix) */
@@ -229,7 +219,7 @@ typedef struct
 } kmeans_data;
 
 
-matrix* k_means(matrix * centroids, matrix *vectors, unsigned int k);
+void k_means(matrix * centroids, matrix *vectors, unsigned int k);
 
 /* SPECTRAL CLUSTERING FUNCTCION
 INPUT: k (may be 0 to trigger the The Eigengap Heuristic) 

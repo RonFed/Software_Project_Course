@@ -436,6 +436,7 @@ void init_eigan_mat(jacobi_matrix *j_mat)
     CALLOC_ARR_ASSERT(j_mat->e_mat, e_vector, n);
     for (i = 0; i < n; i++)
     {
+        /* Allocate memory for each eiganvector */
         CALLOC_ARR_ASSERT((j_mat->e_mat)[i].vec, double, n);
         /* setting the index of eigan-vector */
         (j_mat->e_mat)[i].ind = i;
@@ -471,7 +472,8 @@ void free_jacobi(jacobi_matrix *j_mat)
     free(j_mat);
 }
 
-void max_abs_val_initial(jacobi_matrix *j_mat)
+/* Initail abs value lookup */
+static void max_abs_val_initial(jacobi_matrix *j_mat)
 {
     double max_total = -1, max_in_row, curr_abs;
     unsigned int i, j;
@@ -622,7 +624,48 @@ void rotate_jacobi(jacobi_matrix *j_mat)
     j_mat->off_diff = 2 * (positive_diff - negative_diff);
 }
 
-void update_max_jac(jacobi_matrix *j_mat, int is_not_first)
+/* update j_mat->max_inds for row i */
+static void update_max_in_row(jacobi_matrix *j_mat, unsigned int row)
+{
+    unsigned int j, old_max_col;
+    double curr, max;
+    old_max_col = (j_mat->max_inds)[row];
+    max = fabs(get_val(j_mat, row, old_max_col));
+    /* only checking elements right to the diagonal */
+    for (j = row + 1; j < (j_mat->mat)->dim; j++)
+    {
+        curr = fabs(get_val(j_mat, row, j));
+        if (curr > max)
+        {
+            max = curr;
+            (j_mat->max_inds)[row] = j;
+        }
+    }
+}
+
+/* upatate the toal max and row_ind, col_ind fields */
+static void update_total_max_inds(jacobi_matrix *j_mat)
+{
+    double max = -1, curr;
+    unsigned int r, max_row = 0, max_col = 0;
+    /* last row doesn't contain relevant elements (just one element on diagonal) */
+    for (r = 0; r < (j_mat->mat)->dim - 1; r++)
+    {
+        /* max value in line r */
+        curr = fabs(get_val(j_mat, r, (j_mat->max_inds)[r]));
+        if (curr > max)
+        {
+            max = curr;
+            max_row = r;
+            max_col = (j_mat->max_inds)[r];
+        }
+    }
+    j_mat->row_ind = max_row;
+    j_mat->col_ind = max_col;
+}
+
+/* find new max efiicianly after rotation */
+static void update_max_jac(jacobi_matrix *j_mat, int is_not_first)
 {
     if (is_not_first)
     {
@@ -670,47 +713,10 @@ void update_max_jac(jacobi_matrix *j_mat, int is_not_first)
     }
 }
 
-void update_max_in_row(jacobi_matrix *j_mat, unsigned int row)
-{
-    unsigned int j, old_max_col;
-    double curr, max;
-    old_max_col = (j_mat->max_inds)[row];
-    max = fabs(get_val(j_mat, row, old_max_col));
-    /* only checking elements right to the diagonal */
-    for (j = row + 1; j < (j_mat->mat)->dim; j++)
-    {
-        curr = fabs(get_val(j_mat, row, j));
-        if (curr > max)
-        {
-            max = curr;
-            (j_mat->max_inds)[row] = j;
-        }
-    }
-}
-
-double get_val_max_off_diagonal(jacobi_matrix *j_mat)
+/* get the value of max abs element off-diagonal */
+static double get_val_max_off_diagonal(jacobi_matrix *j_mat)
 {
     return get_val(j_mat, j_mat->row_ind, j_mat->col_ind);
-}
-
-void update_total_max_inds(jacobi_matrix *j_mat)
-{
-    double max = -1, curr;
-    unsigned int r, max_row = 0, max_col = 0;
-    /* last row doesn't contain relevant elements (just one element on diagonal) */
-    for (r = 0; r < (j_mat->mat)->dim - 1; r++)
-    {
-        /* max value in line r */
-        curr = fabs(get_val(j_mat, r, (j_mat->max_inds)[r]));
-        if (curr > max)
-        {
-            max = curr;
-            max_row = r;
-            max_col = (j_mat->max_inds)[r];
-        }
-    }
-    j_mat->row_ind = max_row;
-    j_mat->col_ind = max_col;
 }
 
 /* comparison function for qsort */
@@ -1090,17 +1096,25 @@ static void update_centroids(kmeans_data *kmeans_data)
     }
 }
 
+static void free_kmeans(kmeans_data *kmeans_data)
+{
+    /* Free the un-relevant data and keep the centroids*/
+    free_mat(kmeans_data->clusters_sums);
+    free(kmeans_data->which_cluster);
+    free(kmeans_data->clusters_size);
+    free(kmeans_data);
+}
+
 /* Main K-Means Algorithm :
     centroids matrix is the inital centroids (every row a centroid) K rows dim columns
         the centroids must be initialized by an external source
     vectors matrix is the data matrix, every row is a data-point
     centroids and vectors matrixes are asuumed to be initialized and allocates
     The centroids matrix will contain the final centroids */
-matrix *k_means(matrix *centroids, matrix *vectors, unsigned int k)
+void k_means(matrix *centroids, matrix *vectors, unsigned int k)
 {
     unsigned int i, current_vector, vectors_num;
     int new_closest_cluster;
-    matrix *final_centroids;
     kmeans_data *kmeans_data;
     kmeans_data = init_kmeans(vectors, centroids, k);
     vectors_num = vectors->rows;
@@ -1134,13 +1148,8 @@ matrix *k_means(matrix *centroids, matrix *vectors, unsigned int k)
         }
         update_centroids(kmeans_data);
     }
-    /* Free the un-relevant data and keep the centroids*/
-    free_mat(kmeans_data->clusters_sums);
-    free(kmeans_data->which_cluster);
-    free(kmeans_data->clusters_size);
-    final_centroids = kmeans_data->centroids;
-    free(kmeans_data);
-    return final_centroids;
+    /* Free the un-relevant data and keep the centroids and vectors data */
+    free_kmeans(kmeans_data);
 }
 
 /* Simple init for centroids - the first k vectors in the vectors data
