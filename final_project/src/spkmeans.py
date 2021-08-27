@@ -49,15 +49,20 @@ def negative_zero_fix(num):
     return -num
 
 # print list in csv format with 4 decimal places
-def print_list(lst):
+def print_list(lst, last_line = False):
     for i in range(len(lst) - 1):
         print("{:.4f}".format(negative_zero_fix(lst[i])), end=",")
-    print("{:.4f}".format(negative_zero_fix(lst[len(lst) - 1])))
+    if last_line:
+         end_char = "" 
+    else: 
+        end_char = "\n"
+    print("{:.4f}".format(negative_zero_fix(lst[len(lst) - 1])), end=end_char)
 
 # print matrix (list of lists) in csv format
 def print_mat(mat):
-    for line in mat:
-        print_list(line)
+    for i in range(len(mat) - 1):
+        print_list(mat[i])
+    print_list(mat[len(mat) - 1], last_line=True)
 
 def print_jacobi(j_mat):
     # print the first line of eiganvalues
