@@ -150,6 +150,14 @@ matrix *init_mat(unsigned int rows, unsigned int cols)
     return mat;
 }
 
+static double negative_zero_fix(double num) {
+    if (num >= 0 || num <= -5.0e-5)
+    {
+        return num;
+    }
+    return -num;
+}
+
 /* Print matrix object in CSV format */
 void print_mat(matrix *mat)
 {
@@ -158,10 +166,14 @@ void print_mat(matrix *mat)
     {
         for (j = 0; j < mat->cols - 1; j++)
         {
-            printf("%.4f,", (mat->data)[i][j]);
+            printf("%.4f,", negative_zero_fix((mat->data)[i][j]));
         }
-        printf("%.4f", (mat->data)[i][mat->cols - 1]);
-        printf("\n");
+        printf("%.4f", negative_zero_fix((mat->data)[i][mat->cols - 1]));
+        /* According to forum, no new line at the end of the printout*/
+        if (i != (mat->rows - 1))
+        {
+            printf("\n");
+        }
     }
 }
 
@@ -226,14 +238,18 @@ void print_sym_mat(sym_matrix *mat)
     {
         for (j = 0; j < i; j++)
         {
-            printf("%.4f,", (mat->data)[j][i - j]);
+            printf("%.4f,", negative_zero_fix((mat->data)[j][i - j]));
         }
         for (j = i; j < dim - 1; j++)
         {
-            printf("%.4f,", (mat->data)[i][j - i]);
+            printf("%.4f,", negative_zero_fix((mat->data)[i][j - i]));
         }
-        printf("%.4f", (mat->data)[i][dim - 1 - i]);
-        printf("\n");
+        printf("%.4f", negative_zero_fix((mat->data)[i][dim - 1 - i]));
+         /* According to forum, no new line at the end of the printout*/
+        if (i != (dim - 1))
+        {
+             printf("\n");
+        }
     }
 }
 /* Getter for symmetric matrix 
@@ -284,7 +300,7 @@ void print_diag_mat(diag_matrix *mat)
         {
             if (j == i)
             {
-                printf("%.4f", (mat->data)[i]);
+                printf("%.4f", negative_zero_fix((mat->data)[i]));
             }
             else
             {
@@ -295,7 +311,11 @@ void print_diag_mat(diag_matrix *mat)
                 printf(",");
             }
         }
-        printf("\n");
+        /* According to forum, no new line at the end of the printout*/
+        if (i != (dim - 1))
+        {
+            printf("\n");
+        }
     }
 }
 
@@ -564,10 +584,14 @@ void print_e_mat(jacobi_matrix *j_mat)
     {
         for (j = 0; j < n - 1; j++)
         {
-            printf("%.4f,", (e_mat_data[i].vec)[j]);
+            printf("%.4f,", negative_zero_fix((e_mat_data[i].vec)[j]));
         }
-        printf("%.4f", (e_mat_data[i].vec)[n - 1]);
-        printf("\n");
+        printf("%.4f", negative_zero_fix((e_mat_data[i].vec)[n - 1]));
+        /* According to forum, no new line at the end of the printout*/
+        if (i != (n-1))
+        {
+             printf("\n");
+        }
     }
 }
 
@@ -576,11 +600,13 @@ void print_eigan_vectors_values(jacobi_matrix *j_mat)
     e_vector *e_mat_data = j_mat->e_mat;
     unsigned int n = (j_mat->mat)->dim;
     unsigned int i;
+    /* Printing the eiganvalues as first row*/
     for (i = 0; i < n - 1; i++)
     {
-        printf("%.4f,", (e_mat_data[i].e_val));
+        printf("%.4f,", negative_zero_fix((e_mat_data[i].e_val)));
     }
-    printf("%.4f\n", (e_mat_data[n - 1].e_val));
+    printf("%.4f\n", negative_zero_fix((e_mat_data[n - 1].e_val)));
+    /* print the eiganvectors */
     print_e_mat(j_mat);
 }
 

@@ -43,11 +43,16 @@ def read_args(argv):
    
     return k, goal, file_path
 
+def negative_zero_fix(num):
+    if num >= 0 or num <= -5e-5:
+        return num
+    return -num
+
 # print list in csv format with 4 decimal places
 def print_list(lst):
     for i in range(len(lst) - 1):
-        print("{:.4f}".format(lst[i]), end=",")
-    print("{:.4f}".format(lst[len(lst) - 1]))
+        print("{:.4f}".format(negative_zero_fix(lst[i])), end=",")
+    print("{:.4f}".format(negative_zero_fix(lst[len(lst) - 1])))
 
 # print matrix (list of lists) in csv format
 def print_mat(mat):
@@ -112,6 +117,8 @@ def handle_goal(goal, data, k):
         print_mat(weights)
     elif (goal == Goal.DDG.value):
         degree_1d = sp.degree_mat(data)
+        # converting the 1d representation of 
+        # diagonal matrix to 2d representation for printing
         degree_2d = [[degree_1d[j] if i==j else 0 for j in range(len(degree_1d))] for i in range(len(degree_1d))]
         print_mat(degree_2d)
     elif (goal == Goal.LNORM.value):
@@ -134,7 +141,7 @@ def main():
         assert False, invalid_input_msg
 
     # validate k if it is given (positive)
-    if k > 0:
+    if k > 0 and goal == Goal.SPK.value:
         assert k < len(data), invalid_input_msg
 
     handle_goal(goal, data, k)
