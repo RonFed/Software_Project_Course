@@ -150,6 +150,8 @@ matrix *init_mat(unsigned int rows, unsigned int cols)
     return mat;
 }
 
+/* Avoiding "-0.0000" in the output printouts 
+    according to the project forum */
 static double negative_zero_fix(double num) {
     if (num >= 0 || num <= -5.0e-5)
     {
@@ -188,6 +190,8 @@ void free_mat(matrix *mat)
     free(mat);
 }
 
+/* Initialize symmetric matrix - 
+    allocate memory for half of the matrix */
 sym_matrix *init_sym_mat(unsigned int dim)
 {
     unsigned int i;
@@ -368,7 +372,8 @@ sym_matrix *weights_mat(matrix *mat)
 DEGREE MATRIX FUNCTIONS
 */
 
-double row_sum_sym_mat(sym_matrix *mat, unsigned int row)
+/* Sum of specific row in a symmetric matrix */
+static double row_sum_sym_mat(sym_matrix *mat, unsigned int row)
 {
     double sum;
     unsigned int j;
@@ -381,7 +386,8 @@ double row_sum_sym_mat(sym_matrix *mat, unsigned int row)
     return sum;
 }
 
-/* Compute the degree matrix from data matrix (including weight matrix inside this function) */
+/* Compute the degree matrix from data matrix 
+(including weight matrix calculation inside this function) */
 diag_matrix *degree_mat_from_data(matrix *mat)
 {
     unsigned int i;
@@ -533,8 +539,9 @@ void set_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col, double va
     set_val_sym(j_mat->mat, row, col, val);
 }
 
-/* this fuction is called after the max value row and col indexes are updated */
-void update_c_s_params(jacobi_matrix *j_mat)
+/* update the c and s params after new max is foun
+this fuction is called after the max value row and col indexes are updated */
+static void update_c_s_params(jacobi_matrix *j_mat)
 {
     unsigned int i, j;
     double theta, c, s, t, a_ii, a_jj, a_ij;
@@ -551,7 +558,8 @@ void update_c_s_params(jacobi_matrix *j_mat)
     j_mat->s = s;
 }
 
-void update_eigan_mat(jacobi_matrix *j_mat)
+/* update eigan-vectors matrix after rotation (multiply by rotation matrix) */
+static void update_eigan_mat(jacobi_matrix *j_mat)
 {
     e_vector *e_mat_data = j_mat->e_mat;
     unsigned int i, j, r;
@@ -610,7 +618,8 @@ void print_eigan_vectors_values(jacobi_matrix *j_mat)
     print_e_mat(j_mat);
 }
 
-void rotate_jacobi(jacobi_matrix *j_mat)
+/* rotate the jacobi matrix using c and s parmas */
+static void rotate_jacobi(jacobi_matrix *j_mat)
 {
     sym_matrix *sm_data = j_mat->mat;
     unsigned int i, j, r;
@@ -1001,7 +1010,8 @@ static double distacne(double *a, double *b, unsigned int dim)
     return sum;
 }
 
-/* Find the closest cluster to a given vector */
+/* Find the closest cluster to a given vector
+if more than one the cluster with minimal index will be taken */
 static int closest_cluster_index(kmeans_data *kmeans_data, unsigned int vector_ind)
 {
     unsigned int i, dim, k;
@@ -1136,6 +1146,7 @@ static void free_kmeans(kmeans_data *kmeans_data)
         the centroids must be initialized by an external source
     vectors matrix is the data matrix, every row is a data-point
     centroids and vectors matrixes are asuumed to be initialized and allocates
+    vectors matrix doesn't contain duplicate rows (from the course forum)
     The centroids matrix will contain the final centroids */
 void k_means(matrix *centroids, matrix *vectors, unsigned int k)
 {

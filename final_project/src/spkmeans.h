@@ -102,8 +102,6 @@ sym_matrix *weights_mat(matrix *mat);
 DEGREE MATRIX RELATED FUNCTION  
 */
 
-/* Sum of specific row in a symmetric matrix */
-double row_sum_sym_mat(sym_matrix *mat, unsigned int row);
 /* Calculate the degree matrix */
 diag_matrix *degree_mat_from_data(matrix *mat);
 
@@ -160,14 +158,8 @@ void free_jacobi(jacobi_matrix *j_mat);
 double get_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col);
 /* set a specifi cell in jacobi matrix to given value */
 void set_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col, double val);
-/* update the c and s params after new max is found */
-void update_c_s_params(jacobi_matrix *j_mat);
-/* rotate the jacobi matrix using c and s parmas */
-void rotate_jacobi(jacobi_matrix *j_mat);
 /* initialize eigan-vectors matrix (memeory allocation and set to identity matrix) */
 void init_eigan_mat(jacobi_matrix *j_mat);
-/* update eigan-vectors matrix after rotation (multiply by rotation matrix) */
-void update_eigan_mat(jacobi_matrix *j_mat);
 /* print the eigan-vectors matrix (each eigan-vector as a row) */
 void print_e_mat(jacobi_matrix *j_mat);
 /* print eigan-values as first row and then eigan-vectors as rows*/

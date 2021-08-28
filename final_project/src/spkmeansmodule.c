@@ -200,7 +200,7 @@ static PyObject *jacobi_mat_c_api(PyObject *self, PyObject *args)
 
 /* Input : data matrix from python (list of lists)
    Output : List conatainig k in index 0 and the calculated T matrix in index 1
-            k is calculated only when it is equal to 0.
+            k is calculated only when it is equal to 0 from python.
             T matrix is the result of step 5 in spectrul clustrering algorithm
 */
 static PyObject *k_and_T_mat_c_api(PyObject *self, PyObject *args)
