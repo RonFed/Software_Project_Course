@@ -17,7 +17,7 @@ static int is_legal_goal(const char *str)
 static int is_non_negative_int(const char *str)
 {
     char digit = str[0];
-    size_t i;
+    unsigned int i = 0;
     for (i = 0; i < strlen(str); i++)
     {
         digit = str[i];
@@ -152,7 +152,8 @@ matrix *init_mat(unsigned int rows, unsigned int cols)
 
 /* Avoiding "-0.0000" in the output printouts 
     according to the project forum */
-static double negative_zero_fix(double num) {
+static double negative_zero_fix(double num)
+{
     if (num >= 0 || num <= -5.0e-5)
     {
         return num;
@@ -249,10 +250,10 @@ void print_sym_mat(sym_matrix *mat)
             printf("%.4f,", negative_zero_fix((mat->data)[i][j - i]));
         }
         printf("%.4f", negative_zero_fix((mat->data)[i][dim - 1 - i]));
-         /* According to forum, no new line at the end of the printout*/
+        /* According to forum, no new line at the end of the printout*/
         if (i != (dim - 1))
         {
-             printf("\n");
+            printf("\n");
         }
     }
 }
@@ -333,7 +334,6 @@ static double l2_norm_vectors(matrix *mat, unsigned int row1, unsigned int row2)
     double result, dif;
     unsigned int i;
     result = 0;
-    assert((row1 < mat->rows) && (row2 < mat->rows));
     for (i = 0; i < mat->cols; i++)
     {
         dif = ((mat->data)[row1][i]) - ((mat->data)[row2][i]);
@@ -378,7 +378,6 @@ static double row_sum_sym_mat(sym_matrix *mat, unsigned int row)
     double sum;
     unsigned int j;
     sum = 0;
-    assert(row < mat->dim);
     for (j = 0; j < mat->dim; j++)
     {
         sum += get_val_sym(mat, row, j);
@@ -539,7 +538,7 @@ void set_val(jacobi_matrix *j_mat, unsigned int row, unsigned int col, double va
     set_val_sym(j_mat->mat, row, col, val);
 }
 
-/* update the c and s params after new max is foun
+/* update the c and s params after new max is found
 this fuction is called after the max value row and col indexes are updated */
 static void update_c_s_params(jacobi_matrix *j_mat)
 {
@@ -596,9 +595,9 @@ void print_e_mat(jacobi_matrix *j_mat)
         }
         printf("%.4f", negative_zero_fix((e_mat_data[i].vec)[n - 1]));
         /* According to forum, no new line at the end of the printout*/
-        if (i != (n-1))
+        if (i != (n - 1))
         {
-             printf("\n");
+            printf("\n");
         }
     }
 }
@@ -666,7 +665,7 @@ static void update_max_in_row(jacobi_matrix *j_mat, unsigned int row)
     double curr, max;
     old_max_col = (j_mat->max_inds)[row];
     max = fabs(get_val(j_mat, row, old_max_col));
-    /* only checking elements right to the diagonal */
+    /* only checking elements right to the diagonal (since the matrix is symmetric) */
     for (j = row + 1; j < (j_mat->mat)->dim; j++)
     {
         curr = fabs(get_val(j_mat, row, j));
@@ -776,7 +775,9 @@ int cmp_vecs(const void *vec1, const void *vec2)
     return -1;
 }
 
-void set_eigan_values(jacobi_matrix *j_mat)
+/* set eigan-values to the eigan-vectors 
+This is called at the end of jacobi but before sorting*/
+static void set_eigan_values(jacobi_matrix *j_mat)
 {
     unsigned int n, i;
     n = (j_mat->mat)->dim;
@@ -831,7 +832,7 @@ static unsigned int find_dimension_from_first_line(FILE *file_pointer, double **
         {
             current_arr_len *= ARR_SIZE_MULTIPLY;
             (*first_line) = realloc(*first_line, current_arr_len * sizeof(double));
-            assert(*first_line);
+            ASSERT_WITH_MSG(*first_line != NULL, ERROR_MSG);
         }
         (*first_line)[dimension] = current_element;
         dimension++;
@@ -1156,7 +1157,7 @@ void k_means(matrix *centroids, matrix *vectors, unsigned int k)
     kmeans_data = init_kmeans(vectors, centroids, k);
     vectors_num = vectors->rows;
 
-    for (i = 0; i < MAX_ITER; i++)
+    for (i = 0; i < MAX_KMEANS_ITER; i++)
     {
         int not_converged = 0;
         /* Iterate over all data points*/

@@ -16,7 +16,7 @@ GENERAL USE MACROS
         if (!(cond))               \
         {                          \
             printf(msg);           \
-            assert(0);             \
+            exit(0);               \
         }                          \
     } while (0)
 #define MALLOC_ARR_ASSERT(ptr, type, size)       \
@@ -35,9 +35,9 @@ GENERAL USE MACROS
 #define SIGN(X) (((X) >= 0) ? 1 : -1)
 #define SQUARE(X) ((X) * (X))
 #define EPSILON 1.0e-15
-#define BASE_ARR_SIZE 100
+#define BASE_ARR_SIZE 50
 #define ARR_SIZE_MULTIPLY 2
-#define MAX_ITER 300
+#define MAX_KMEANS_ITER 300
 #define MAX_JACOBI_ITERS 100
 
 /*
@@ -53,7 +53,7 @@ typedef struct
 /* allocating memory for new matrix and settig dimensions*/
 matrix *init_mat(unsigned int rows, unsigned int cols);
 void print_mat(matrix *mat);
-void free_mat(matrix * mat);
+void free_mat(matrix *mat);
 
 /*
 SYMMETRIC MATRIX
@@ -73,7 +73,7 @@ void free_sym_mat(sym_matrix *mat);
 void print_sym_mat(sym_matrix *mat);
 double get_val_sym(sym_matrix *mat, unsigned int row, unsigned col);
 void set_val_sym(sym_matrix *mat, unsigned int row, unsigned col, double val);
-sym_matrix* matrix_to_sym_matrix(matrix* mat);
+sym_matrix *matrix_to_sym_matrix(matrix *mat);
 
 /*
 DIAGONAL MATRIX
@@ -166,8 +166,6 @@ void print_e_mat(jacobi_matrix *j_mat);
 void print_eigan_vectors_values(jacobi_matrix *j_mat);
 /* compare two vectors to be used by qsort */
 int cmp_vecs(const void *vec1, const void *vec2);
-/* set eigan-values to the eigan-vectors */
-void set_eigan_values(jacobi_matrix *j_mat);
 /* main jacobi algorithm */
 void jacobi(jacobi_matrix *j_mat);
 
@@ -192,44 +190,49 @@ matrix *create_u_matrix(jacobi_matrix *j_mat, unsigned int k);
 /* step 5 in the Normalized Spectral Clustering Algorithm - normlize each row */
 void normlize_rows(matrix *mat);
 
-
 typedef struct
 {
     /* The data matrix - each row is a data point */
-    matrix * vectors;
+    matrix *vectors;
     /* Centroids matrix - each row is a centroid */
-    matrix * centroids;
+    matrix *centroids;
     /* Each row is a vector sum of all the data points assoiciated to the releveant
     cluster i.e if cluster j contains vec1, vec2, vec3 then the j-th row in clusters_sums is
     a vector sum of vec1 + vec2 + vec3 */
-    matrix * clusters_sums;
+    matrix *clusters_sums;
     /* 1D array sized as number of clusters containing their size */
-    unsigned int * clusters_size;
+    unsigned int *clusters_size;
     /* 1D array sized as number of data points containing the cluster index for each data-point
     for an un-associated data point j whick_cluster[j] = -1 (Only initial value) */
-    int * which_cluster;
+    int *which_cluster;
 } kmeans_data;
 
-
-void k_means(matrix * centroids, matrix *vectors, unsigned int k);
+/* Main K-Means Algorithm :
+    centroids matrix is the inital centroids (every row a centroid) K rows dim columns
+        the centroids must be initialized by an external source
+    vectors matrix is the data matrix, every row is a data-point
+    centroids and vectors matrixes are asuumed to be initialized and allocated.
+    vectors matrix doesn't contain duplicate rows (from the course forum)
+    The centroids matrix will contain the final centroids */
+void k_means(matrix *centroids, matrix *vectors, unsigned int k);
 
 /* SPECTRAL CLUSTERING FUNCTCION
 INPUT: k (may be 0 to trigger the The Eigengap Heuristic) 
        filename to csv formatted .txt or .csv files
 OUTPUT: Centroids matrix containing the final centroids
 */
-matrix * spectral_clustering(unsigned int k, matrix * data_mat);
+matrix *spectral_clustering(unsigned int k, matrix *data_mat);
 
 /*
 Handlers functions used in main C program to wrap each goal
 */
 
-void handle_spectral_clustering(unsigned int k, matrix * data_mat);
+void handle_spectral_clustering(unsigned int k, matrix *data_mat);
 
-void handle_weight_matrix(matrix* data_mat);
+void handle_weight_matrix(matrix *data_mat);
 
-void handle_degree_matrix(matrix* data_mat);
+void handle_degree_matrix(matrix *data_mat);
 
-void handle_lnorm_matrix(matrix* data_mat);
+void handle_lnorm_matrix(matrix *data_mat);
 
-void handle_jacobi_matrix(matrix* data_mat);
+void handle_jacobi_matrix(matrix *data_mat);
