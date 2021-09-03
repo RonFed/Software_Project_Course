@@ -814,35 +814,18 @@ void jacobi(jacobi_matrix *j_mat)
 ///////////////////////////////////////////////////////////////////////////////////////
 // ----------------------------------------------------------------------------------*/
 
-/* File is open, read the first line into first_line - looking for CSV format
-first line is a pointer to a pointer that may change using realloc (since dimension is not known)
-return the dimension of the data i.e how many elements found in the first row (assuming each row will have
-the same dimension) */
-static unsigned int find_dimension_from_first_line(FILE *file_pointer, double **first_line)
+static unsigned int count_commas_in_str(char *str)
 {
-    double current_element;
-    char current_delimeter;
-    unsigned int dimension = 0;
-    unsigned int current_arr_len = BASE_ARR_SIZE;
-
-    while (fscanf(file_pointer, "%lf%c", &current_element, &current_delimeter) == 2)
+    int count = 0;
+    size_t i;
+    for (i = 0; i < strlen(str); i++)
     {
-        /* rarely happens - first line is over BASE_ARR_SIZE elements */
-        if (dimension == current_arr_len)
+        if (str[i] == COMMA)
         {
-            current_arr_len *= ARR_SIZE_MULTIPLY;
-            (*first_line) = realloc(*first_line, current_arr_len * sizeof(double));
-            ASSERT_WITH_MSG(*first_line != NULL, ERROR_MSG);
-        }
-        (*first_line)[dimension] = current_element;
-        dimension++;
-        if (current_delimeter == '\n')
-        {
-            break;
+            count++;
         }
     }
-    (*first_line) = realloc(*first_line, dimension * sizeof(double));
-    return dimension;
+    return count;
 }
 
 /* read data from string buffer to line (assuming dimension elements in line) */
@@ -859,6 +842,32 @@ static void read_line_to_row(char *buffer, double *line, unsigned int dimension)
         /* update the pointer to the buffer */
         buffer += chars_read;
     }
+}
+
+/* File is open, read the first line into first_line - looking for CSV format
+first line is a pointer to a pointer that may change using realloc (since dimension is not known)
+return the dimension of the data i.e how many elements found in the first row (assuming each row will have
+the same dimension) */
+static unsigned int find_dimension_from_first_line(FILE *file_pointer, double **first_line)
+{
+    unsigned int dimension = 0;
+    unsigned int buffer_size = 0;
+    char *buffer;
+
+    /* assuming each numeber is less than 100 digits (max 10 features)*/
+    buffer_size = 10 * 100;
+    MALLOC_ARR_ASSERT(buffer, char, buffer_size);
+
+    /* read first line in file to the buffer */
+    fgets(buffer, buffer_size, file_pointer);
+    /* dimension is the number of commas in the first line + 1*/
+    dimension = count_commas_in_str(buffer) + 1;
+    /* parse first line to double array first_line */
+    read_line_to_row(buffer, *first_line, dimension);
+
+    free(buffer);
+    (*first_line) = realloc(*first_line, dimension * sizeof(double));
+    return dimension;
 }
 
 /* main parsing - return matrix object from csv formatted file */

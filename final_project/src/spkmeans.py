@@ -12,6 +12,11 @@ class Goal(Enum):
     LNORM = "lnorm"
     JACOBI = "jacobi"
 
+def myAssert(cond, print_msg):
+    if not cond:
+        print(print_msg)
+        exit()
+
 def isLegalGoal(x):
     try:
         Goal(x)
@@ -32,17 +37,19 @@ def isInt(x):
 # file_path path to csv or txt file containing the data
 def read_args(argv):
     num_args = len(argv)
-    assert num_args == 4, invalid_input_msg
+    myAssert(num_args == 4, invalid_input_msg)
     k = argv[1]
-    assert isInt(k), invalid_input_msg
+    myAssert(isInt(k), invalid_input_msg)
     k = int(k)
-    assert k >= 0, invalid_input_msg
+    myAssert(k >= 0, invalid_input_msg)
     goal = argv[2]
-    assert isLegalGoal(goal), invalid_input_msg
+    myAssert(isLegalGoal(goal), invalid_input_msg)
     file_path = argv[3]
    
     return k, goal, file_path
 
+# Avoiding "-0.0000" in the output printouts 
+# according to the project forum 
 def negative_zero_fix(num):
     if num >= 0 or num <= -5e-5:
         return num
@@ -133,7 +140,7 @@ def handle_goal(goal, data, k):
         jacobi_m = sp.jacobi_mat(data)
         print_jacobi(jacobi_m)
     else :
-        assert False, invalid_input_msg
+        myAssert(False, invalid_input_msg)
 
 def main():
     # check validity of command line arguments
@@ -143,11 +150,11 @@ def main():
     try:
         data = np.genfromtxt(file_path, delimiter=',').tolist()
     except OSError:
-        assert False, invalid_input_msg
+        myAssert(False, invalid_input_msg)
 
     # validate k if it is given (positive)
     if k > 0 and goal == Goal.SPK.value:
-        assert k < len(data), invalid_input_msg
+        myAssert(k < len(data), invalid_input_msg)
 
     handle_goal(goal, data, k)
 

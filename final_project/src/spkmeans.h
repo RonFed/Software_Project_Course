@@ -7,6 +7,7 @@ GENERAL USE MACROS
 */
 #define INVALID_INPUT_MSG "Invalid Input!\n"
 #define ERROR_MSG "An Error Has Occured\n"
+#define COMMA ','
 #define MALLOC_ARR(type, size) (type *)malloc((size) * (sizeof(type)))
 #define CALLOC_ARR(type, size) (type *)calloc(size, sizeof(type))
 #define ASSERT_MALLOC(ptr) assert((ptr) != NULL)
